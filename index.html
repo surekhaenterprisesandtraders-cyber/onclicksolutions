@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a56db">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OnClick">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>On Click Solutions</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init("Fw4qKg-if_y80FNR1");</script>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1341b0;
+    --primary-light: #e8f0fe;
+    --primary-mid: #3b82f6;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --dark: #0f172a;
+    --dark2: #1e293b;
+    --gray: #64748b;
+    --gray-light: #f1f5f9;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --danger: #ef4444;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow: 0 4px 16px rgba(26,86,219,0.10);
+    --shadow-lg: 0 8px 32px rgba(26,86,219,0.15);
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--gray-light); color:var(--dark); min-height:100vh; }
+  nav {
+    background:var(--white); border-bottom:1px solid var(--border);
+    padding:0 24px; display:flex; align-items:center; justify-content:space-between;
+    height:64px; position:sticky; top:0; z-index:100; box-shadow:var(--shadow-sm);
+  }
+  .logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .logo-icon { width:38px; height:38px; background:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .logo-text { font-family:'Poppins',sans-serif; font-size:17px; font-weight:700; color:var(--dark); line-height:1.1; }
+  .logo-text span { color:var(--primary); }
+  .logo-sub { font-size:10px; color:var(--gray); font-weight:400; font-family:'Inter',sans-serif; }
+  .nav-right { display:flex; align-items:center; gap:12px; }
+  .btn { border:none; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; border-radius:8px; transition:all .2s; }
+  .btn-outline { background:transparent; border:1.5px solid var(--primary); color:var(--primary); padding:8px 18px; font-size:14px; }
+  .btn-outline:hover { background:var(--primary-light); }
+  .btn-primary { background:var(--primary); color:var(--white); padding:9px 20px; font-size:14px; }
+  .btn-primary:hover { background:var(--primary-dark); transform:translateY(-1px); box-shadow:var(--shadow); }
+  .btn-accent { background:var(--accent); color:var(--dark); padding:12px 28px; font-size:15px; font-weight:700; border-radius:10px; }
+  .btn-accent:hover { background:#d97706; transform:translateY(-1px); }
+  .screen { display:none; }
+  .screen.active { display:block; }
+  .hero {
+    background:linear-gradient(135deg, #0f172a 0%, #1a56db 60%, #3b82f6 100%);
+    padding:72px 24px 80px; text-align:center; position:relative; overflow:hidden;
+  }
+  .hero::before { content:''; position:absolute; top:-60px; right:-60px; width:320px; height:320px; background:rgba(255,255,255,0.04); border-radius:50%; }
+  .hero::after { content:''; position:absolute; bottom:-80px; left:-40px; width:240px; height:240px; background:rgba(255,255,255,0.03); border-radius:50%; }
+  .hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:20px; padding:5px 14px; font-size:12px; color:rgba(255,255,255,0.85); margin-bottom:20px; }
+  .hero h1 { font-family:'Poppins',sans-serif; font-size:clamp(28px,5vw,48px); font-weight:800; color:var(--white); line-height:1.15; margin-bottom:16px; }
+  .hero h1 span { color:var(--accent); }
+  .hero p { font-size:16px; color:rgba(255,255,255,0.75); max-width:520px; margin:0 auto 32px; line-height:1.7; }
+  .hero-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-hero-outline { background:transparent; border:2px solid rgba(255,255,255,0.4); color:var(--white); padding:12px 28px; font-size:15px; font-weight:600; border-radius:10px; cursor:pointer; font-family:'Inter',sans-serif; transition:all .2s; }
+  .btn-hero-outline:hover { background:rgba(255,255,255,0.1); }
+  .stats-row { display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-top:48px; padding-top:40px; border-top:1px solid rgba(255,255,255,0.15); }
+  .stat { text-align:center; }
+  .stat-num { font-family:'Poppins',sans-serif; font-size:28px; font-weight:800; color:var(--white); }
+  .stat-label { font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
+  .section { padding:48px 24px; max-width:1100px; margin:0 auto; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+  .section-title { font-family:'Poppins',sans-serif; font-size:22px; font-weight:700; color:var(--dark); }
+  .section-title span { color:var(--primary); }
+  .badge-hot { background:var(--accent-light); color:var(--accent); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1px solid #fcd34d; margin-left:8px; }
+  .see-all { color:var(--primary); font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; }
+  .popular-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+  .popular-card { background:var(--white); border:1.5px solid var(--border); border-radius:var(--radius); padding:18px 14px; text-align:center; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+  .popular-card:hover { border-color:var(--primary); box-shadow:var(--shadow); transform:translateY(-2px); }
+  .popular-card .card-icon { font-size:28px; margin-bottom:10px; }
+  .popular-card .card-name { font-size:13px; font-weight:600; color:var(--dark); line-height:1.3; }
+  .popular-card .card-tag { font-size:10px; color:var(--gray); margin-top:4px; }
+  .hot-tag { position:absolute; top:8px; right:8px; background:var(--accent); color:var(--dark); font-size:9px; font-weight:700; padding:2px 7px; border-radius:8px; }
+  .categories-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+  .category-card { background:var(--white); border:1.5px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; cursor:pointer; transition:all .2s; }
+  .category-card:hover { border-color:var(--primary); box-shadow:var(--shadow-lg); }
+  .cat-header { background:linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%); padding:18px 20px; display:flex; align-items:center; gap:12px; }
+  .cat-header .cat-icon { font-size:24px; }
+  .cat-header .cat-name { font-family:'Poppins',sans-serif; font-size:15px; font-weight:700; color:var(--white); }
+  .cat-header .cat-count { font-size:11px; color:rgba(255,255,255,0.7); }
+  .cat-services { padding:14px 20px 18px; display:flex; flex-wrap:wrap; gap:7px; }
+  .cat-chip { background:var(--primary-light); color:var(--primary); font-size:11px; font-weight:500; padding:4px 10px; border-radius:20px; cursor:pointer; transition:all .2s; }
+  .cat-chip:hover { background:var(--primary); color:var(--white); }
+  .apply-container { max-width:640px; margin:40px auto; padding:0 20px; }
+  .apply-card { background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); overflow:hidden; }
+  .apply-header { background:linear-gradient(135deg, var(--primary) 0%, var(--primary-mid) 100%); padding:28px; color:var(--white); }
+  .apply-header h2 { font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; }
+  .apply-header p { font-size:13px; opacity:.8; margin-top:4px; }
+  .apply-body { padding:28px; }
+  .form-group { margin-bottom:18px; }
+  .form-label { display:block; font-size:13px; font-weight:600; color:var(--dark2); margin-bottom:6px; }
+  .form-label .req { color:var(--danger); }
+  .form-input, .form-select, .form-textarea { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:9px; font-size:14px; font-family:'Inter',sans-serif; color:var(--dark); background:var(--white); transition:border .2s; outline:none; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+  .form-textarea { resize:vertical; min-height:90px; }
+  .upload-box { border:2px dashed var(--border); border-radius:10px; padding:24px; text-align:center; cursor:pointer; transition:all .2s; }
+  .upload-box:hover { border-color:var(--primary); background:var(--primary-light); }
+  .upload-box .upload-icon { font-size:28px; margin-bottom:6px; }
+  .upload-box p { font-size:13px; color:var(--gray); }
+  .upload-box strong { color:var(--primary); }
+  .btn-submit { width:100%; background:var(--primary); color:var(--white); border:none; border-radius:10px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; font-family:'Poppins',sans-serif; transition:all .2s; margin-top:8px; }
+  .btn-submit:hover { background:var(--primary-dark); transform:translateY(-1px); box-shadow:var(--shadow-lg); }
+  .back-btn { display:inline-flex; align-items:center; gap:6px; color:var(--gray); font-size:14px; font-weight:500; cursor:pointer; margin-bottom:20px; border:none; background:none; font-family:'Inter',sans-serif; }
+  .back-btn:hover { color:var(--primary); }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--white); border-radius:var(--radius-lg); width:100%; max-width:420px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden; }
+  .modal-header { background:linear-gradient(135deg, var(--primary), var(--primary-mid)); padding:24px 28px; color:var(--white); position:relative; }
+  .modal-header h3 { font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; }
+  .modal-header p { font-size:13px; opacity:.8; margin-top:3px; }
+  .modal-body { padding:28px; }
+  .modal-tabs { display:flex; margin-bottom:24px; border:1.5px solid var(--border); border-radius:9px; overflow:hidden; }
+  .modal-tab { flex:1; padding:10px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; background:var(--white); color:var(--gray); border:none; font-family:'Inter',sans-serif; transition:all .2s; }
+  .modal-tab.active { background:var(--primary); color:var(--white); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+  .modal-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.2); border:none; color:var(--white); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+  .dashboard-header { background:linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%); padding:28px 24px; color:var(--white); }
+  .dashboard-header h2 { font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; }
+  .dashboard-header p { font-size:13px; opacity:.75; margin-top:3px; }
+  .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; padding:24px; max-width:1100px; margin:0 auto; }
+  .dash-card { background:var(--white); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .dash-card .dash-num { font-family:'Poppins',sans-serif; font-size:28px; font-weight:800; color:var(--primary); }
+  .dash-card .dash-label { font-size:13px; color:var(--gray); margin-top:4px; }
+  .applications-list { max-width:1100px; margin:0 auto; padding:0 24px 40px; }
+  .app-item { background:var(--white); border-radius:var(--radius); padding:16px 20px; margin-bottom:10px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .app-info { flex:1; min-width:200px; }
+  .app-service { font-size:15px; font-weight:600; color:var(--dark); }
+  .app-date { font-size:12px; color:var(--gray); margin-top:3px; }
+  .app-id { font-size:11px; color:var(--gray); }
+  .status-badge { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  .status-pending { background:#fef3c7; color:#d97706; }
+  .status-progress { background:#dbeafe; color:#1a56db; }
+  .status-done { background:#d1fae5; color:#059669; }
+  .admin-bar { background:var(--dark); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-bar-title { color:var(--white); font-size:14px; font-weight:600; }
+  .admin-badge { background:var(--accent); color:var(--dark); font-size:11px; font-weight:700; padding:3px 10px; border-radius:8px; }
+  .success-screen { max-width:480px; margin:60px auto; padding:20px; text-align:center; }
+  .success-icon { font-size:64px; margin-bottom:16px; }
+  .success-title { font-family:'Poppins',sans-serif; font-size:24px; font-weight:700; color:var(--dark); margin-bottom:10px; }
+  .success-sub { font-size:14px; color:var(--gray); line-height:1.7; margin-bottom:24px; }
+  .ref-box { background:var(--primary-light); border:1.5px solid var(--primary); border-radius:10px; padding:14px; margin-bottom:24px; }
+  .ref-label { font-size:12px; color:var(--gray); }
+  .ref-num { font-family:'Poppins',sans-serif; font-size:22px; font-weight:800; color:var(--primary); }
+  .why-section { background:var(--white); }
+  .why-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:24px; }
+  .why-card { text-align:center; padding:8px; }
+  .why-icon { font-size:36px; margin-bottom:12px; }
+  .why-title { font-size:15px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+  .why-desc { font-size:13px; color:var(--gray); line-height:1.6; }
+  footer { background:var(--dark); color:rgba(255,255,255,0.6); text-align:center; padding:24px; font-size:13px; }
+  footer strong { color:var(--white); }
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--dark); color:var(--white); padding:14px 20px; border-radius:10px; font-size:14px; font-weight:500; box-shadow:0 8px 32px rgba(0,0,0,0.3); transform:translateX(120%); transition:transform .3s ease; z-index:999; max-width:300px; display:flex; align-items:center; gap:10px; }
+  .toast.show { transform:translateX(0); }
+  .toast.success { border-left:4px solid var(--success); }
+  .toast.error { border-left:4px solid var(--danger); }
+  .file-item { font-size:12px; color:var(--success); margin-top:4px; padding:4px 8px; background:#f0fdf4; border-radius:6px; }
+  @media(max-width:600px) {
+    .stats-row { gap:24px; }
+    .popular-grid { grid-template-columns:repeat(3,1fr); }
+    nav { padding:0 16px; }
+    .hero { padding:48px 16px 56px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#" onclick="event.preventDefault(); showScreen('home');">
+    <div class="logo-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 2L20 12L13 13.5L10 21L4 2Z" fill="white" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="19" cy="19" r="3.5" fill="#f59e0b"/>
+        <path d="M17 19H21M19 17V21" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">On <span>Click</span> Solutions</div>
+      <div class="logo-sub">Government &amp; Business Services</div>
+    </div>
+  </a>
+  <div class="nav-right" id="navRight">
+    <button class="btn btn-outline" onclick="openModal('login')">Login</button>
+    <button class="btn btn-primary" onclick="openModal('signup')">Sign Up</button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="hero">
+    <div class="hero-badge">&#9889; Fast &bull; Reliable &bull; Trusted</div>
+    <h1>All Government Services,<br><span>One Click Away</span></h1>
+    <p>From Aadhaar to Company Registration &mdash; we handle all your government paperwork so you don't have to.</p>
+    <div class="hero-btns">
+      <button class="btn-accent" onclick="scrollToServices()">Explore Services</button>
+      <button class="btn-hero-outline" onclick="openModal('signup')">Get Started Free</button>
+      <button class="btn-hero-outline" onclick="openQuickApply()" style="background:rgba(245,158,11,0.15);border-color:#f59e0b;color:#fcd34d;">&#128203; Quick Apply</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Services</div></div>
+      <div class="stat"><div class="stat-num">1000+</div><div class="stat-label">Happy Clients</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">Years Experience</div></div>
+      <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Success Rate</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="services-section">
+    <div class="section-header">
+      <div class="section-title">&#128293; Popular Services <span class="badge-hot">TRENDING</span></div>
+    </div>
+    <div class="popular-grid" id="popularGrid"></div>
+  </div>
+
+  <div class="section" id="categories-section">
+    <div class="section-header">
+      <div class="section-title">Browse by <span>Category</span></div>
+    </div>
+    <div class="categories-grid" id="categoriesGrid"></div>
+  </div>
+
+  <div class="why-section">
+    <div class="section">
+      <div class="section-header"><div class="section-title">Why Choose <span>Us?</span></div></div>
+      <div class="why-grid">
+        <div class="why-card"><div class="why-icon">&#9889;</div><div class="why-title">Fast Processing</div><div class="why-desc">Most services completed within 2-5 working days with real-time updates.</div></div>
+        <div class="why-card"><div class="why-icon">&#128274;</div><div class="why-title">100% Secure</div><div class="why-desc">Your documents and data are handled with complete confidentiality.</div></div>
+        <div class="why-card"><div class="why-icon">&#128172;</div><div class="why-title">Expert Support</div><div class="why-desc">Our team guides you through every step via WhatsApp, call, or visit.</div></div>
+        <div class="why-card"><div class="why-icon">&#128241;</div><div class="why-title">Track Anytime</div><div class="why-desc">Check your application status 24/7 from your phone or laptop.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong>On Click Solutions</strong> &middot; Mumbai, Maharashtra<br>
+    &#128100; Founder: <strong>Rahul Patwaa</strong> &nbsp;&middot;&nbsp; &#128222; +91 97271 38236<br>
+    <span>All Government &amp; Business Services Under One Roof</span>
+  </footer>
+</div>
+
+<!-- APPLY -->
+<div id="screen-apply" class="screen">
+  <div class="apply-container">
+    <button class="back-btn" onclick="showScreen('home')">&#8592; Back to Services</button>
+    <div class="apply-card">
+      <div class="apply-header">
+        <h2 id="applyTitle">Service Name</h2>
+        <p>Fill in the details below. Our team will get back to you with pricing &amp; timeline.</p>
+      </div>
+      <div class="apply-body">
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="req">*</span></label>
+          <input class="form-input" id="applyName" type="text" placeholder="Enter your full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mobile Number <span class="req">*</span></label>
+          <input class="form-input" id="applyPhone" type="tel" placeholder="+91 XXXXX XXXXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" id="applyEmail" type="email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub-service / Specific Requirement</label>
+          <input class="form-input" id="applySubService" type="text" placeholder="e.g. Address Update, New Apply...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Additional Notes</label>
+          <textarea class="form-textarea" id="applyNotes" placeholder="Describe your requirement in detail..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Upload Documents (optional)</label>
+          <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">&#128206;</div>
+            <p><strong>Click to upload</strong> or drag &amp; drop</p>
+            <p>PDF, JPG, PNG up to 10MB each &middot; <strong>Multiple files allowed</strong></p>
+          </div>
+          <input type="file" id="fileInput" style="display:none" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(this)">
+          <div id="uploadedFiles" style="margin-top:8px;"></div>
+        </div>
+        <button class="btn-submit" onclick="submitApplication()">&#128232; Submit Enquiry</button>
+        <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">We'll send you a quote via WhatsApp &amp; SMS within 2-4 hours</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="screen-success" class="screen">
+  <div class="success-screen">
+    <div class="success-icon">&#9989;</div>
+    <div class="success-title">Enquiry Submitted!</div>
+    <div class="success-sub">Your application has been received. Our team will review it and send you a quote via <strong>WhatsApp &amp; SMS</strong> within 2&ndash;4 hours.</div>
+    <div class="ref-box">
+      <div class="ref-label">Your Reference Number</div>
+      <div class="ref-num" id="refNumber">#OCS-00000</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="showScreen('dashboard');renderDashboard()">Track My Application</button>
+    <br><br>
+    <button class="back-btn" onclick="showScreen('home')" style="justify-content:center;width:100%;">&#8592; Back to Home</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen">
+  <div class="dashboard-header">
+    <h2 id="dashGreeting">My Applications</h2>
+    <p>Track the status of all your service requests</p>
+  </div>
+  <div class="dash-grid" id="dashGrid"></div>
+  <div class="applications-list" id="appList"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="screen-admin" class="screen">
+  <div class="admin-bar">
+    <span class="admin-bar-title">&#128295; Admin Panel &mdash; On Click Solutions</span>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+  <div class="dashboard-header">
+    <h2>All Applications</h2>
+    <p>Manage and update client enquiries</p>
+  </div>
+  <div class="dash-grid">
+    <div class="dash-card"><div class="dash-num" id="adminTotal">0</div><div class="dash-label">Total Applications</div></div>
+    <div class="dash-card"><div class="dash-num" id="adminPending">0</div><div class="dash-label">Pending</div></div>
+    <div class="dash-card"><div class="dash-num" id="adminProgress">0</div><div class="dash-label">In Progress</div></div>
+    <div class="dash-card"><div class="dash-num" id="adminDone">0</div><div class="dash-label">Completed</div></div>
+  </div>
+  <div class="applications-list" id="adminList"></div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Welcome to On Click Solutions</h3>
+      <p>Your trusted government service partner</p>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+      <div class="tab-content active" id="content-login">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="loginId" type="text" placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" id="loginPass" type="password" placeholder="Enter password">
+        </div>
+        <button class="btn-submit" onclick="doLogin()">Login to My Account</button>
+        <p style="text-align:center;margin-top:12px;font-size:13px;">
+          <a style="color:var(--primary);cursor:pointer;" onclick="switchTab('forgot')">Forgot Password?</a>
+        </p>
+        <p style="text-align:center;font-size:13px;">
+          Admin? <a style="color:var(--primary);cursor:pointer;" onclick="adminLogin()">Admin Login</a>
+        </p>
+      </div>
+      <div class="tab-content" id="content-signup">
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="req">*</span></label>
+          <input class="form-input" id="signupName" type="text" placeholder="Your full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mobile Number <span class="req">*</span></label>
+          <input class="form-input" id="signupPhone" type="tel" placeholder="+91 XXXXX XXXXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address <span class="req">*</span></label>
+          <input class="form-input" id="signupEmail" type="email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password <span class="req">*</span></label>
+          <input class="form-input" id="signupPass" type="password" placeholder="Minimum 6 characters">
+        </div>
+        <button class="btn-submit" onclick="doSignup()">Create My Account &rarr;</button>
+        <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">&#128231; A verification link will be sent to your email after signup</p>
+      </div>
+      <div class="tab-content" id="content-forgot">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:40px;">&#128272;</div>
+          <div style="font-size:16px;font-weight:700;margin-top:8px;">Reset Password</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:4px;">We'll send a reset link to your email</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registered Email Address <span class="req">*</span></label>
+          <input class="form-input" id="forgotEmail" type="email" placeholder="your@email.com">
+        </div>
+        <button class="btn-submit" onclick="doForgotPassword()">&#128231; Send Reset Link</button>
+        <p style="text-align:center;margin-top:12px;font-size:13px;">
+          <a style="color:var(--primary);cursor:pointer;" onclick="switchTab('login')">&#8592; Back to Login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK APPLY -->
+<div id="screen-quickapply" class="screen">
+  <div class="apply-container">
+    <button class="back-btn" onclick="showScreen('home')">&#8592; Back to Home</button>
+    <div class="apply-card">
+      <div class="apply-header">
+        <h2>&#128203; Quick Apply &mdash; Any Service</h2>
+        <p>Can't find your service? Fill this form and we'll handle it for you!</p>
+      </div>
+      <div class="apply-body">
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="req">*</span></label>
+          <input class="form-input" id="qaName" type="text" placeholder="Enter your full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mobile Number <span class="req">*</span></label>
+          <input class="form-input" id="qaPhone" type="tel" placeholder="+91 XXXXX XXXXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" id="qaEmail" type="email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Service <span class="req">*</span></label>
+          <select class="form-select" id="qaService" onchange="handleQAServiceChange()">
+            <option value="">-- Select a Service --</option>
+          </select>
+        </div>
+        <div class="form-group" id="qaSubGroup" style="display:none;">
+          <label class="form-label">Sub-Service / Specific Requirement</label>
+          <select class="form-select" id="qaSubService">
+            <option value="">-- Select Sub-service --</option>
+          </select>
+        </div>
+        <div class="form-group" id="qaOthersGroup" style="display:none;">
+          <label class="form-label">Describe Your Requirement <span class="req">*</span></label>
+          <textarea class="form-textarea" id="qaOthersDesc" placeholder="Please describe what service or work you need..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Additional Notes</label>
+          <textarea class="form-textarea" id="qaNotes" placeholder="Any additional details, deadline, or special requirements..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Upload Documents (optional)</label>
+          <div class="upload-box" onclick="document.getElementById('qaFileInput').click()">
+            <div class="upload-icon">&#128206;</div>
+            <p><strong>Click to upload</strong> or drag &amp; drop</p>
+            <p>PDF, JPG, PNG up to 10MB each &middot; <strong>Multiple files allowed</strong></p>
+          </div>
+          <input type="file" id="qaFileInput" style="display:none" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleQAFileUpload(this)">
+          <div id="qaUploadedFiles" style="margin-top:8px;"></div>
+        </div>
+        <button class="btn-submit" onclick="submitQuickApply()">&#128232; Submit My Enquiry</button>
+        <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">We'll contact you within 2&ndash;4 hours via WhatsApp &amp; SMS with pricing details</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT -->
+<div id="screen-payment" class="screen">
+  <div class="apply-container">
+    <button class="back-btn" onclick="showScreen('dashboard');renderDashboard()">&#8592; Back to My Applications</button>
+    <div class="apply-card">
+      <div class="apply-header">
+        <h2>&#128179; Make Payment</h2>
+        <p>Pay securely via UPI &mdash; GPay, PhonePe, Paytm, any UPI app</p>
+      </div>
+      <div class="apply-body">
+        <div id="paymentServiceName" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>
+        <div id="paymentRefId" style="font-size:13px;color:var(--gray);margin-bottom:20px;"></div>
+        <div style="background:var(--primary-light);border-radius:12px;padding:16px;text-align:center;margin-bottom:20px;">
+          <div style="font-size:13px;color:var(--gray);">Amount to Pay</div>
+          <div id="paymentAmount" style="font-size:32px;font-weight:800;color:var(--primary);">&#8377;0</div>
+        </div>
+        <div style="text-align:center;margin-bottom:20px;">
+          <img id="upiQrImg" src="" alt="UPI QR Code" style="width:200px;height:200px;border-radius:12px;border:2px solid var(--border);">
+          <div style="font-size:12px;color:var(--gray);margin-top:8px;">Scan with any UPI app</div>
+        </div>
+        <div style="background:var(--gray-light);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">
+          <div style="font-size:12px;color:var(--gray);">Or pay directly to UPI ID</div>
+          <div style="font-size:16px;font-weight:700;color:var(--dark);margin:6px 0;">7718807756@ptyes</div>
+          <button onclick="copyUPI()" style="background:transparent;border:1.5px solid var(--primary);color:var(--primary);padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">&#128203; Copy UPI ID</button>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-bottom:20px;">
+          <a id="gpayLink" href="#" style="display:flex;align-items:center;gap:6px;background:var(--white);border:1.5px solid var(--border);padding:10px 18px;border-radius:10px;text-decoration:none;color:var(--dark);font-weight:600;font-size:14px;">GPay</a>
+          <a id="phonepeLink" href="#" style="display:flex;align-items:center;gap:6px;background:var(--white);border:1.5px solid var(--border);padding:10px 18px;border-radius:10px;text-decoration:none;color:var(--dark);font-weight:600;font-size:14px;">&#128241; PhonePe</a>
+        </div>
+        <div style="background:#fef3c7;border-radius:10px;padding:14px;margin-bottom:20px;">
+          <div style="font-size:13px;font-weight:700;color:#d97706;">&#9888;&#65039; After Payment</div>
+          <div style="font-size:12px;color:var(--dark);margin-top:4px;">Screenshot le lo aur WhatsApp pe bhejo: <strong>+91 97271 38236</strong><br>Reference: <span id="paymentRefInNote"></span></div>
+        </div>
+        <button onclick="confirmPayment()" class="btn-submit">&#9989; I Have Made the Payment</button>
+        <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">Our team will verify and update your application status</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDto3zYQzxXdZrGcr5DyzqjlQcB5FlDHuk",
+  authDomain: "onclicksolutions.firebaseapp.com",
+  projectId: "onclicksolutions",
+  storageBucket: "onclicksolutions.firebasestorage.app",
+  messagingSenderId: "596321952643",
+  appId: "1:596321952643:web:630d19e69f569519b3ccb6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const SERVICES = {
+  "Identity & Personal": {
+    icon: "\uD83E\uDEAA",
+    services: [
+      { name:"Aadhaar Card", subs:["Address Update","Name Change","Date of Birth Change","Mobile Number Update","Biometric Update"], popular:true },
+      { name:"PAN Card", subs:["New Apply","Correction"], popular:true },
+      { name:"Voter ID", subs:["New Apply","Correction"], popular:false },
+      { name:"Passport", subs:["New Passport Apply","Renew Passport","Update / Correction"], popular:true },
+      { name:"PCC", subs:["Police Clearance Certificate"], popular:false },
+      { name:"Marriage Certificate", subs:["New Apply"], popular:false }
+    ]
+  },
+  "Driving & Vehicle (RTO)": {
+    icon: "\uD83D\uDE97",
+    services: [
+      { name:"Driving License", subs:["Apply for DL","Renew License","Duplicate License","Address Change in License"], popular:true },
+      { name:"RC Related Services", subs:["New RC","RC Transfer","RC Renewal","Duplicate RC","Hypothecation Add/Remove","Address Change in RC"], popular:false },
+      { name:"Road Tax", subs:["Road Tax Payment","Road Tax Clearance"], popular:false },
+      { name:"Vehicle Insurance", subs:["New Insurance","Renewal","Claim Assistance"], popular:false }
+    ]
+  },
+  "Income & Tax": {
+    icon: "\uD83D\uDCB0",
+    services: [
+      { name:"ITR Filing", subs:["Income Tax Return Filing"], popular:true },
+      { name:"GST Return Filing", subs:["GSTR-1","GSTR-3B","GSTR-9 Annual Return","Other GST Return"], popular:true },
+      { name:"Tax Related Works", subs:["TDS Filing","Advance Tax","Other Tax Work"], popular:false },
+      { name:"Income Certificate", subs:["New Apply"], popular:false }
+    ]
+  },
+  "Business & Legal": {
+    icon: "\uD83C\uDFE2",
+    services: [
+      { name:"Business Registration", subs:["Proprietorship Firm","Partnership Firm","LLP Company","Private Limited Company"], popular:true },
+      { name:"GST Registration", subs:["New Registration","Amendment","Cancellation"], popular:true },
+      { name:"Gumasta License", subs:["Shop Establishment License"], popular:false },
+      { name:"Food License", subs:["New Apply","Renewal"], popular:false },
+      { name:"DSC", subs:["Digital Signature Certificate"], popular:false },
+      { name:"Excise Related Works", subs:["Liquor License","Other Excise"], popular:false }
+    ]
+  },
+  "Certificates & Affidavits": {
+    icon: "\uD83D\uDCDC",
+    services: [
+      { name:"Caste Certificate", subs:["New Apply"], popular:false },
+      { name:"Domicile Certificate", subs:["New Apply"], popular:false },
+      { name:"Name Change Gazette", subs:["Gazette Notification"], popular:false },
+      { name:"All Type of Affidavit", subs:["Notarized Affidavit","Other Affidavit"], popular:false },
+      { name:"Disability Certificate", subs:["New Apply"], popular:false },
+      { name:"Non Creamy Layer Certificate", subs:["New Apply"], popular:false },
+      { name:"Senior Citizen Certificate", subs:["New Apply"], popular:false }
+    ]
+  },
+  "Government Schemes": {
+    icon: "\uD83C\uDFDB\uFE0F",
+    services: [
+      { name:"PF / EPF Related Works", subs:["PF Withdrawal","UAN Activation","EPF Transfer","Other PF Work"], popular:false },
+      { name:"Ayushman Card", subs:["New Ayushman Card","Ayushman Card Correction","Ayushman Card Download"], popular:false }
+    ]
+  },
+  "Digital Services": {
+    icon: "\uD83D\uDCBB",
+    services: [
+      { name:"Website Designing", subs:["Business Website","E-commerce","Portfolio"], popular:false },
+      { name:"Android App Development", subs:["Business App","Custom App"], popular:false },
+      { name:"Insurance", subs:["Life Insurance","Health Insurance","Vehicle Insurance","Other Insurance"], popular:false }
+    ]
+  }
+};
+
+const POPULAR_ICONS = {
+  "Aadhaar Card":"\uD83E\uDEAA","PAN Card":"\uD83D\uDCCB","Driving License":"\uD83D\uDE97","Passport":"\u2708\uFE0F",
+  "ITR Filing":"\uD83E\uDDFE","GST Registration":"\uD83C\uDFEA","Business Registration":"\uD83C\uDFE2","Voter ID":"\uD83D\uDDF3\uFE0F"
+};
+
+let currentUser = null;
+let currentService = '';
+let selectedFiles = [];
+let selectedQAFiles = [];
+let currentPaymentApp = null;
+const ADMIN_EMAIL = 'admin@onclicksolutions.in';
+
+function init() {
+  renderPopular();
+  renderCategories();
+}
+
+auth.onAuthStateChanged(async function(user) {
+  if (user) {
+    var isAdmin = user.email === ADMIN_EMAIL;
+    currentUser = {
+      id: user.uid,
+      name: user.displayName || user.email.split('@')[0],
+      email: user.email,
+      phone: user.phoneNumber || '',
+      role: isAdmin ? 'admin' : 'client'
+    };
+    updateNav();
+    if (isAdmin) { showScreen('admin'); renderAdmin(); }
+  } else {
+        currentUser = null;
+    var nr = document.getElementById('navRight');
+    nr.innerHTML = '';
+    var btnL = document.createElement('button');
+    btnL.className = 'btn btn-outline';
+    btnL.textContent = 'Login';
+    btnL.onclick = function(){ openModal('login'); };
+    var btnS = document.createElement('button');
+    btnS.className = 'btn btn-primary';
+    btnS.textContent = 'Sign Up';
+    btnS.onclick = function(){ openModal('signup'); };
+    nr.appendChild(btnL);
+    nr.appendChild(btnS);
+    showScreen('home');
+  }
+});
+function updateNav() {
+  var navRight = document.getElementById('navRight');
+  if (!currentUser) return;
+  navRight.innerHTML = '';
+  if (currentUser.role === 'admin') {
+    var spanAdmin = document.createElement('span');
+    spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
+    spanAdmin.textContent = 'Admin';
+    var btnPanel = document.createElement('button');
+    btnPanel.className = 'btn btn-primary';
+    btnPanel.textContent = 'Admin Panel';
+    btnPanel.onclick = function() { showScreen('admin'); renderAdmin(); };
+    var btnLogout = document.createElement('button');
+    btnLogout.className = 'btn btn-outline';
+    btnLogout.textContent = 'Logout';
+    btnLogout.onclick = function() { logout(); };
+    navRight.appendChild(spanAdmin);
+    navRight.appendChild(btnPanel);
+    navRight.appendChild(btnLogout);
+  } else {
+    var btnQA = document.createElement('button');
+    btnQA.className = 'btn btn-outline';
+    btnQA.textContent = '📋 Quick Apply';
+    btnQA.onclick = function() { openQuickApply(); };
+    var btnMyApps = document.createElement('button');
+    btnMyApps.className = 'btn btn-outline';
+    btnMyApps.textContent = 'My Applications';
+    btnMyApps.onclick = function() { showScreen('dashboard'); renderDashboard(); };
+    var btnOut = document.createElement('button');
+    btnOut.className = 'btn btn-primary';
+    btnOut.textContent = 'Logout';
+    btnOut.onclick = function() { logout(); };
+    navRight.appendChild(btnQA);
+    navRight.appendChild(btnMyApps);
+    navRight.appendChild(btnOut);
+  }
+}
+
+function renderPopular() {
+  var grid = document.getElementById('popularGrid');
+  grid.innerHTML = '';
+  Object.entries(SERVICES).forEach(function(entry) {
+    var cat = entry[0], data = entry[1];
+    data.services.forEach(function(s) {
+      if (s.popular) {
+        var icon = POPULAR_ICONS[s.name] || data.icon;
+        var card = document.createElement('div');
+        card.className = 'popular-card';
+        card.innerHTML = '<div class="hot-tag">HOT</div><div class="card-icon">' + icon + '</div><div class="card-name">' + s.name + '</div><div class="card-tag">' + cat + '</div>';
+        card.addEventListener('click', (function(name){ return function(){ openApply(name); }; })(s.name));
+        grid.appendChild(card);
+      }
+    });
+  });
+}
+
+function renderCategories() {
+  var grid = document.getElementById('categoriesGrid');
+  grid.innerHTML = '';
+  Object.entries(SERVICES).forEach(function(entry) {
+    var cat = entry[0], data = entry[1];
+    var total = data.services.length;
+    var card = document.createElement('div');
+    card.className = 'category-card';
+    var header = document.createElement('div');
+    header.className = 'cat-header';
+    header.innerHTML = '<span class="cat-icon">' + data.icon + '</span><div><div class="cat-name">' + cat + '</div><div class="cat-count">' + total + ' service' + (total > 1 ? 's' : '') + '</div></div>';
+    var servicesDiv = document.createElement('div');
+    servicesDiv.className = 'cat-services';
+    data.services.forEach(function(s) {
+      var chip = document.createElement('span');
+      chip.className = 'cat-chip';
+      chip.textContent = s.name;
+      chip.addEventListener('click', (function(name){ return function(){ openApply(name); }; })(s.name));
+      servicesDiv.appendChild(chip);
+    });
+    card.appendChild(header);
+    card.appendChild(servicesDiv);
+    grid.appendChild(card);
+  });
+}
+
+function openApply(serviceName) {
+  if (!currentUser) {
+    showToast('Please login or sign up first!', 'error');
+    openModal('login');
+    return;
+  }
+  currentService = serviceName;
+  document.getElementById('applyTitle').textContent = serviceName;
+  document.getElementById('applyName').value = currentUser.name || '';
+  document.getElementById('applyPhone').value = currentUser.phone || '';
+  document.getElementById('applyEmail').value = currentUser.email || '';
+  document.getElementById('applySubService').value = '';
+  document.getElementById('applyNotes').value = '';
+  document.getElementById('uploadedFiles').innerHTML = '';
+  selectedFiles = [];
+  showScreen('apply');
+}
+
+async function submitApplication() {
+  var name = document.getElementById('applyName').value.trim();
+  var phone = document.getElementById('applyPhone').value.trim();
+  if (!name || !phone) { showToast('Name and mobile are required!', 'error'); return; }
+
+  var ref = 'OCS-' + Date.now().toString().slice(-5);
+  showToast('Submitting...', 'success');
+
+  var fileURLs = [];
+  if (selectedFiles.length > 0) {
+    showToast('Uploading ' + selectedFiles.length + ' file(s)...', 'success');
+    fileURLs = await uploadFilesToCloudinary(selectedFiles, ref);
+    if (fileURLs.length > 0) showToast(fileURLs.length + ' file(s) uploaded! ✅', 'success');
+  }
+
+  var appData = {
+    refId: ref,
+    service: currentService,
+    subService: document.getElementById('applySubService').value,
+    notes: document.getElementById('applyNotes').value,
+    name: name, phone: phone,
+    email: document.getElementById('applyEmail').value,
+    status: 'Pending',
+    date: new Date().toLocaleDateString('en-IN'),
+    userId: currentUser ? currentUser.id : '',
+    fileURLs: fileURLs,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection('applications').add(appData);
+    document.getElementById('refNumber').textContent = '#' + ref;
+    selectedFiles = [];
+    showScreen('success');
+    showToast('Enquiry submitted! We will contact you shortly.', 'success');
+    sendEmailNotification(appData);
+    selectedFiles = [];
+    document.getElementById('uploadedFiles').innerHTML = '';
+    document.getElementById('fileInput').value = '';
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function submitQuickApply() {
+  var name = document.getElementById('qaName').value.trim();
+  var phone = document.getElementById('qaPhone').value.trim();
+  var service = document.getElementById('qaService').value;
+  var othersDesc = document.getElementById('qaOthersDesc').value.trim();
+
+  if (!name || !phone) { showToast('Name and mobile are required!', 'error'); return; }
+  if (!service) { showToast('Please select a service!', 'error'); return; }
+  if (service === 'Others' && !othersDesc) { showToast('Please describe your requirement!', 'error'); return; }
+
+  var subSel = document.getElementById('qaSubService');
+  var subService = service === 'Others' ? othersDesc : (subSel.value || '');
+  var ref = 'OCS-' + Date.now().toString().slice(-5);
+  showToast('Submitting...', 'success');
+
+  var fileURLs = [];
+  if (selectedQAFiles.length > 0) {
+    showToast('Uploading ' + selectedQAFiles.length + ' file(s)...', 'success');
+    fileURLs = await uploadFilesToCloudinary(selectedQAFiles, ref);
+    if (fileURLs.length > 0) showToast(fileURLs.length + ' file(s) uploaded! ✅', 'success');
+  }
+
+  var appData = {
+    refId: ref,
+    service: service === 'Others' ? 'Others / Custom Request' : service,
+    subService: subService,
+    notes: document.getElementById('qaNotes').value,
+    name: name, phone: phone,
+    email: document.getElementById('qaEmail').value,
+    status: 'Pending',
+    date: new Date().toLocaleDateString('en-IN'),
+    userId: currentUser ? currentUser.id : '',
+    fileURLs: fileURLs,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection('applications').add(appData);
+    document.getElementById('refNumber').textContent = '#' + ref;
+    showScreen('success');
+    showToast('Enquiry submitted! We will contact you shortly.', 'success');
+    sendEmailNotification(appData);
+    selectedQAFiles = [];
+    document.getElementById('qaUploadedFiles').innerHTML = '';
+    document.getElementById('qaFileInput').value = '';
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+function renderDashboard() {
+  if (!currentUser) return;
+  var dashGrid = document.getElementById('dashGrid');
+  var appList = document.getElementById('appList');
+  dashGrid.innerHTML = '<div class="dash-card"><div class="dash-num">...</div><div class="dash-label">Loading...</div></div>';
+
+  db.collection('applications').where('userId','==', currentUser.id)
+    .onSnapshot(function(snap) {
+    var myApps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
+
+
+    var pending = myApps.filter(function(a){ return a.status==='Pending'; }).length;
+    var progress = myApps.filter(function(a){ return a.status==='In Progress'; }).length;
+    var done = myApps.filter(function(a){ return a.status==='Completed'; }).length;
+
+    dashGrid.innerHTML =
+      '<div class="dash-card"><div class="dash-num">' + myApps.length + '</div><div class="dash-label">Total Applications</div></div>' +
+      '<div class="dash-card"><div class="dash-num" style="color:#d97706">' + pending + '</div><div class="dash-label">Pending</div></div>' +
+      '<div class="dash-card"><div class="dash-num">' + progress + '</div><div class="dash-label">In Progress</div></div>' +
+      '<div class="dash-card"><div class="dash-num" style="color:#059669">' + done + '</div><div class="dash-label">Completed</div></div>';
+
+    appList.innerHTML = '';
+    if (myApps.length === 0) {
+      var noDiv = document.createElement('div');
+      noDiv.style.cssText = 'text-align:center;padding:48px;color:var(--gray);';
+      noDiv.innerHTML = '<div style="font-size:48px;">&#128203;</div><div style="font-size:16px;font-weight:600;margin-top:12px;">No applications yet</div><div style="font-size:13px;margin-top:6px;">Apply for a service to get started</div>';
+      var bBtn = document.createElement('button');
+      bBtn.className = 'btn btn-primary';
+      bBtn.style.cssText = 'margin-top:16px;padding:10px 24px;';
+      bBtn.textContent = 'Browse Services';
+      bBtn.onclick = function(){ showScreen('home'); };
+      noDiv.appendChild(bBtn);
+      appList.appendChild(noDiv);
+      return;
+    }
+
+    myApps.forEach(function(a) {
+      var div = document.createElement('div');
+      div.className = 'app-item';
+      var infoDiv = document.createElement('div');
+      infoDiv.className = 'app-info';
+      infoDiv.innerHTML =
+        '<div class="app-service">' + (a.service||'') + '</div>' +
+        '<div class="app-date">&#128197; ' + (a.date||'') + (a.subService ? ' &middot; '+a.subService : '') + '</div>' +
+        (a.remark ? '<div style="font-size:12px;color:#1a56db;margin-top:3px;">&#128221; ' + a.remark + '</div>' : '') +
+        '<div class="app-id">Ref: #' + (a.refId||a.docId||'') + '</div>';
+      var actionDiv = document.createElement('div');
+      actionDiv.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;';
+      var badge = document.createElement('div');
+      badge.className = 'status-badge ' + statusClass(a.status);
+      badge.textContent = a.status;
+      actionDiv.appendChild(badge);
+      if (a.quote && a.paymentRequested) {
+        var payBtn = document.createElement('button');
+        payBtn.style.cssText = 'background:#10b981;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+        payBtn.textContent = '&#128179; Pay \u20B9' + a.quote;
+        payBtn.addEventListener('click', (function(app){ return function(){ openPayment(app); }; })(a));
+        actionDiv.appendChild(payBtn);
+      }
+      div.appendChild(infoDiv);
+      div.appendChild(actionDiv);
+      appList.appendChild(div);
+    });
+  }, function(error) {
+    console.error('Dashboard error:', error);
+    var appList = document.getElementById('appList');
+    appList.innerHTML = '<div style="text-align:center;padding:24px;color:var(--danger);">⚠️ Error loading applications. Please refresh the page.</div>';
+  });
+}
+
+function renderAdmin() {
+  document.getElementById('adminList').innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray);">Loading applications...</div>';
+  db.collection('applications').orderBy('createdAt','desc').onSnapshot(function(snap) {
+    var apps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
+    document.getElementById('adminTotal').textContent = apps.length;
+    document.getElementById('adminPending').textContent = apps.filter(function(a){ return a.status==='Pending'; }).length;
+    document.getElementById('adminProgress').textContent = apps.filter(function(a){ return a.status==='In Progress'; }).length;
+    document.getElementById('adminDone').textContent = apps.filter(function(a){ return a.status==='Completed'; }).length;
+
+    var list = document.getElementById('adminList');
+    if (apps.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--gray);">No applications yet.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    apps.forEach(function(a) {
+      var div = document.createElement('div');
+      div.className = 'app-item';
+      div.style.cssText = 'flex-direction:column;align-items:stretch;gap:12px;';
+
+      var fileLinksHTML = '';
+      if (a.fileURLs && a.fileURLs.length > 0) {
+        fileLinksHTML = '<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:var(--gray);margin-bottom:4px;">&#128206; Attachments (' + a.fileURLs.length + '):</div>'
+          + a.fileURLs.map(function(f) {
+              var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
+              var viewUrl = isPDF ? 'https://docs.google.com/viewer?url=' + encodeURIComponent(f.url) + '&embedded=false' : f.url;
+              var icon = isPDF ? '&#128209;' : '&#128196;';
+              return '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:6px;font-size:11px;text-decoration:none;margin:2px;font-weight:500;">' + icon + ' ' + f.name + '</a>';
+            }).join('') + '</div>';
+      }
+
+      var infoDiv = document.createElement('div');
+      infoDiv.innerHTML =
+        '<div class="app-service">' + (a.service||'') + (a.subService ? ' &mdash; '+a.subService : '') + '</div>' +
+        '<div class="app-date">&#128222; ' + (a.phone||'') + ' &middot; ' + (a.name||'') + ' &middot; ' + (a.date||'') + '</div>' +
+        '<div class="app-id">Ref: #' + (a.refId||'') + (a.email ? ' &middot; '+a.email : '') + '</div>' +
+        (a.notes ? '<div class="app-id" style="margin-top:4px;">&#128221; ' + a.notes + '</div>' : '') +
+        fileLinksHTML +
+        (a.remark ? '<div style="font-size:12px;color:#059669;margin-top:3px;">&#9989; Last Remark: ' + a.remark + '</div>' : '') +
+        (a.quote ? '<div style="font-size:12px;color:#1a56db;margin-top:3px;">&#128176; Quote Sent: &#8377;' + a.quote + '</div>' : '');
+
+      var actDiv = document.createElement('div');
+      actDiv.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
+
+      var sel = document.createElement('select');
+      sel.className = 'form-select';
+      sel.style.cssText = 'width:140px;font-size:13px;padding:7px 10px;';
+      ['Pending','In Progress','Completed'].forEach(function(s) {
+        var opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        if (a.status === s) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', (function(id){ return function(){ updateStatus(id, this.value); }; })(a.docId));
+
+      var amtInput = document.createElement('input');
+      amtInput.type = 'number';
+      amtInput.id = 'amount-' + a.docId;
+      amtInput.placeholder = '\u20B9 Amount';
+      amtInput.value = a.quote || '';
+      amtInput.style.cssText = 'width:110px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Inter,sans-serif;';
+
+      var remInput = document.createElement('input');
+      remInput.type = 'text';
+      remInput.id = 'remark-' + a.docId;
+      remInput.placeholder = 'Remark (optional)';
+      remInput.value = a.remark || '';
+      remInput.style.cssText = 'width:180px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Inter,sans-serif;';
+
+      var qBtn = document.createElement('button');
+      qBtn.className = 'btn btn-primary';
+      qBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#059669;';
+      qBtn.textContent = '&#128232; Send Quote';
+      qBtn.addEventListener('click', (function(app){ return function(){ sendQuoteNew(app.docId, app.service, app.name, app.phone, app.refId||'', app.email||''); }; })(a));
+
+      actDiv.appendChild(sel);
+      actDiv.appendChild(amtInput);
+      actDiv.appendChild(remInput);
+      actDiv.appendChild(qBtn);
+      div.appendChild(infoDiv);
+      div.appendChild(actDiv);
+      list.appendChild(div);
+    });
+  });
+}
+
+async function updateStatus(docId, status) {
+  try {
+    await db.collection('applications').doc(docId).update({ status: status });
+    showToast('Status updated!', 'success');
+  } catch(e) { showToast('Update failed!', 'error'); }
+}
+
+async function sendQuoteNew(docId, service, name, phone, refId, email) {
+  var amountInput = document.getElementById('amount-' + docId);
+  var remarkInput = document.getElementById('remark-' + docId);
+  var quote = amountInput ? amountInput.value.trim() : '';
+  var remark = remarkInput ? remarkInput.value.trim() : '';
+  if (!quote) { showToast('Please enter payment amount first!', 'error'); return; }
+  try {
+    await db.collection('applications').doc(docId).update({
+      quote: quote, remark: remark, paymentRequested: true,
+      quoteSentAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    var remarkLine = remark ? ('\n\n\uD83D\uDCDD *Remark:* ' + remark) : '';
+    var msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
+    window.open('https://wa.me/91' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+    if (email) sendQuoteEmail(email, name, service, refId, quote);
+    showToast('Quote sent via WhatsApp! \u2705', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function openPayment(app) {
+  currentPaymentApp = app;
+  var amount = app.quote || '0';
+  var upiId = '7718807756@ptyes';
+  var note = app.refId || app.docId;
+  document.getElementById('paymentServiceName').textContent = app.service;
+  document.getElementById('paymentRefId').textContent = 'Ref: #' + (app.refId || app.docId);
+  document.getElementById('paymentAmount').textContent = '\u20B9' + amount;
+  document.getElementById('paymentRefInNote').textContent = '#' + (app.refId || app.docId);
+  var upiUrl = 'upi://pay?pa=' + upiId + '&pn=OnClickSolutions&am=' + amount + '&tn=OCS-' + note + '&cu=INR';
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(upiUrl);
+  document.getElementById('upiQrImg').src = qrUrl;
+  document.getElementById('gpayLink').href = 'tez://upi/pay?pa=' + upiId + '&pn=OnClickSolutions&am=' + amount + '&tn=OCS-' + note + '&cu=INR';
+  document.getElementById('phonepeLink').href = 'phonepe://pay?pa=' + upiId + '&pn=OnClickSolutions&am=' + amount + '&tn=OCS-' + note + '&cu=INR';
+  showScreen('payment');
+}
+
+function copyUPI() {
+  navigator.clipboard.writeText('7718807756@ptyes').then(function() {
+    showToast('UPI ID copied!', 'success');
+  }).catch(function() {
+    showToast('UPI ID: 7718807756@ptyes', 'success');
+  });
+}
+
+async function confirmPayment() {
+  if (!currentPaymentApp) return;
+  try {
+    await db.collection('applications').doc(currentPaymentApp.docId).update({
+      paymentStatus: 'Pending Verification',
+      paymentConfirmedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Payment confirmation received! We will verify shortly.', 'success');
+  } catch(e) {
+    showToast('Updated! Please send screenshot on WhatsApp.', 'success');
+  }
+  showScreen('dashboard');
+  renderDashboard();
+}
+
+async function doForgotPassword() {
+  var email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { showToast('Please enter your email!', 'error'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showToast('Reset link sent! Check your email \uD83D\uDCE7', 'success');
+    setTimeout(function(){ closeModal(); }, 2000);
+  } catch(e) {
+    if (e.code === 'auth/user-not-found') showToast('No account found with this email!', 'error');
+    else showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function doLogin() {
+  var emailInput = document.getElementById('loginId').value.trim();
+  var pass = document.getElementById('loginPass').value;
+  if (!emailInput || !pass) { showToast('Please enter email and password!', 'error'); return; }
+  try {
+    var cred = await auth.signInWithEmailAndPassword(emailInput, pass);
+    if (!cred.user.emailVerified) {
+      await auth.signOut();
+      await cred.user.sendEmailVerification().catch(function(){});
+      showToast('Please verify your email first! Verification link resent \uD83D\uDCE7', 'error');
+      return;
+    }
+    closeModal();
+    showToast('Welcome back! \uD83D\uDC4B', 'success');
+  } catch(e) {
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      showToast('Invalid email or password!', 'error');
+    } else {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+}
+
+async function adminLogin() {
+  var pass = document.getElementById('loginPass').value;
+  try {
+    await auth.signInWithEmailAndPassword(ADMIN_EMAIL, pass);
+    closeModal();
+  } catch(e) { showToast('Wrong admin password!', 'error'); }
+}
+
+async function doSignup() {
+  var name = document.getElementById('signupName').value.trim();
+  var phone = document.getElementById('signupPhone').value.trim();
+  var email = document.getElementById('signupEmail').value.trim();
+  var pass = document.getElementById('signupPass').value;
+  if (!name || !phone || !email || !pass) { showToast('Please fill all required fields!', 'error'); return; }
+  if (pass.length < 6) { showToast('Password must be at least 6 characters!', 'error'); return; }
+  try {
+    var cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    await cred.user.sendEmailVerification();
+    await db.collection('users').doc(cred.user.uid).set({
+      uid: cred.user.uid, name: name, phone: phone, email: email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Account created! Please check your email to verify \uD83D\uDCE7', 'success');
+    closeModal();
+  } catch(e) {
+    if (e.code === 'auth/email-already-in-use') showToast('Email already registered! Please login.', 'error');
+    else if (e.code === 'auth/weak-password') showToast('Password too weak! Use 6+ characters.', 'error');
+    else showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function logout() {
+  await auth.signOut();
+  showScreen('home');
+  showToast('Logged out successfully.', 'success');
+}
+
+function openQuickApply() {
+  if (!currentUser) {
+    showToast('Please login or sign up first!', 'error');
+    openModal('login');
+    return;
+  }
+  document.getElementById('qaName').value = currentUser.name || '';
+  document.getElementById('qaPhone').value = currentUser.phone || '';
+  document.getElementById('qaEmail').value = currentUser.email || '';
+  document.getElementById('qaNotes').value = '';
+  document.getElementById('qaUploadedFiles').innerHTML = '';
+  selectedQAFiles = [];
+  populateQADropdown();
+  showScreen('quickapply');
+}
+
+function populateQADropdown() {
+  var sel = document.getElementById('qaService');
+  sel.innerHTML = '<option value="">-- Select a Service --</option>';
+  Object.entries(SERVICES).forEach(function(entry) {
+    var cat = entry[0], data = entry[1];
+    var grp = document.createElement('optgroup');
+    grp.label = cat;
+    data.services.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s.name;
+      opt.textContent = s.name;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  });
+  var othersOpt = document.createElement('option');
+  othersOpt.value = 'Others';
+  othersOpt.textContent = '\uD83D\uDD39 Others (Not listed above)';
+  sel.appendChild(othersOpt);
+}
+
+function handleQAServiceChange() {
+  var val = document.getElementById('qaService').value;
+  var subGroup = document.getElementById('qaSubGroup');
+  var othersGroup = document.getElementById('qaOthersGroup');
+  var subSel = document.getElementById('qaSubService');
+  subGroup.style.display = 'none';
+  othersGroup.style.display = 'none';
+  subSel.innerHTML = '<option value="">-- Select Sub-service --</option>';
+  if (val === 'Others') { othersGroup.style.display = 'block'; return; }
+  if (!val) return;
+  var subs = [];
+  Object.values(SERVICES).forEach(function(data) {
+    var found = data.services.find(function(s){ return s.name === val; });
+    if (found) subs = found.subs;
+  });
+  if (subs.length > 0) {
+    subs.forEach(function(sub) {
+      var opt = document.createElement('option');
+      opt.value = sub; opt.textContent = sub;
+      subSel.appendChild(opt);
+    });
+    var othOpt = document.createElement('option');
+    othOpt.value = 'Other'; othOpt.textContent = 'Other / Not Listed';
+    subSel.appendChild(othOpt);
+    subGroup.style.display = 'block';
+  }
+}
+
+async function sendEmailNotification(appData) {
+  try {
+    await emailjs.send("service_ybsphno", "template_1eqx68r", {
+      client_name: appData.name,
+      client_phone: appData.phone,
+      client_email: appData.email || 'Not provided',
+      service_name: appData.service,
+      sub_service: appData.subService || 'Not specified',
+      ref_id: appData.refId,
+      notes: appData.notes || 'None',
+      date: appData.date
+    });
+  } catch(e) { console.log('Email failed:', e); }
+}
+
+async function sendQuoteEmail(clientEmail, clientName, service, refId, quote) {
+  try {
+    await emailjs.send("service_ybsphno", "template_1eqx68r", {
+      client_name: clientName,
+      client_phone: '',
+      client_email: clientEmail,
+      service_name: service,
+      sub_service: 'Quote: \u20B9' + quote,
+      ref_id: refId,
+      notes: 'Your quote has been sent. Please login to pay.',
+      date: new Date().toLocaleDateString('en-IN')
+    });
+  } catch(e) { console.log('Quote email failed:', e); }
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+  if (history.state && history.state.screen !== name) {
+    history.pushState({ screen: name }, '', '#' + name);
+  } else if (!history.state) {
+    history.replaceState({ screen: name }, '', '#' + name);
+  }
+}
+
+window.addEventListener('popstate', function(e) {
+  if (e.state && e.state.screen) {
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('screen-' + e.state.screen).classList.add('active');
+    window.scrollTo({ top:0, behavior:'smooth' });
+    // Re-render if needed
+    if (e.state.screen === 'dashboard' && currentUser) renderDashboard();
+    if (e.state.screen === 'admin' && currentUser && currentUser.role === 'admin') renderAdmin();
+  } else {
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('screen-home').classList.add('active');
+  }
+});
+
+function openModal(tab) {
+  document.getElementById('authModal').classList.add('open');
+  switchTab(tab);
+}
+function closeModal() { document.getElementById('authModal').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('authModal')) closeModal(); }
+
+function switchTab(tab) {
+  ['login','signup','forgot'].forEach(function(t) {
+    var tabEl = document.getElementById('tab-' + t);
+    var contentEl = document.getElementById('content-' + t);
+    if (tabEl) tabEl.classList.toggle('active', t === tab);
+    if (contentEl) contentEl.classList.toggle('active', t === tab);
+  });
+}
+
+function scrollToServices() {
+  document.getElementById('services-section').scrollIntoView({ behavior:'smooth' });
+}
+
+function statusClass(s) {
+  if (s === 'Pending') return 'status-pending';
+  if (s === 'In Progress') return 'status-progress';
+  return 'status-done';
+}
+
+function showToast(msg, type) {
+  type = type || 'success';
+  var t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '\u2705 ' : '\u274C ') + msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3500);
+}
+
+function handleFileUpload(input) {
+  var newFiles = Array.from(input.files);
+  // Accumulate files - don't replace previous selection
+  newFiles.forEach(function(newFile) {
+    var exists = selectedFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
+    if (!exists) selectedFiles.push(newFile);
+  });
+  // Reset input so same file can be re-selected
+  input.value = '';
+  renderSelectedFiles();
+}
+
+function renderSelectedFiles() {
+  var div = document.getElementById('uploadedFiles');
+  if (selectedFiles.length === 0) { div.innerHTML = ''; return; }
+  div.innerHTML = selectedFiles.map(function(f, i) {
+    return '<div style="font-size:12px;color:#059669;margin-top:4px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span>✅ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)</span>' +
+      '<span onclick="removeFile(' + i + ')" style="color:#ef4444;cursor:pointer;margin-left:8px;font-weight:700;">✕</span>' +
+      '</div>';
+  }).join('');
+  showToast(selectedFiles.length + ' file(s) selected!', 'success');
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderSelectedFiles();
+}
+
+function handleQAFileUpload(input) {
+  var newFiles = Array.from(input.files);
+  newFiles.forEach(function(newFile) {
+    var exists = selectedQAFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
+    if (!exists) selectedQAFiles.push(newFile);
+  });
+  input.value = '';
+  renderSelectedQAFiles();
+}
+
+function renderSelectedQAFiles() {
+  var div = document.getElementById('qaUploadedFiles');
+  if (selectedQAFiles.length === 0) { div.innerHTML = ''; return; }
+  div.innerHTML = selectedQAFiles.map(function(f, i) {
+    return '<div style="font-size:12px;color:#059669;margin-top:4px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span>✅ ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)</span>' +
+      '<span onclick="removeQAFile(' + i + ')" style="color:#ef4444;cursor:pointer;margin-left:8px;font-weight:700;">✕</span>' +
+      '</div>';
+  }).join('');
+  showToast(selectedQAFiles.length + ' file(s) selected!', 'success');
+}
+
+function removeQAFile(index) {
+  selectedQAFiles.splice(index, 1);
+  renderSelectedQAFiles();
+}
+
+
+// ===== CLOUDINARY FILE UPLOAD =====
+var CLOUDINARY_CLOUD = 'dvc0xqoqw';
+var CLOUDINARY_PRESET = 'onclicksolutions';
+
+async function uploadFilesToCloudinary(files, refId) {
+  var uploaded = [];
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    try {
+      var formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_PRESET);
+      formData.append('folder', 'onclicksolutions/' + refId);
+      var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/auto/upload', {
+        method: 'POST',
+        body: formData
+      });
+      var data = await res.json();
+      if (data.secure_url) {
+        uploaded.push({ name: file.name, url: data.secure_url });
+      }
+    } catch(e) {
+      console.error('Upload failed:', file.name, e);
+    }
+  }
+  return uploaded;
+}
+
+init();
+</script>
+</body>
+</html>
