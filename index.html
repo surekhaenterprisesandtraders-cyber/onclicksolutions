@@ -942,12 +942,17 @@ function renderAdmin() {
         a.fileURLs.forEach(function(f) {
           var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
           if (isPDF) {
+            // Extract UUID from Uploadcare URL
+            var pdfViewUrl = f.url;
+            var uuidMatch = f.url.match(/ucarecdn\.com\/([a-f0-9\-]+)\//);
+            if (uuidMatch) {
+              pdfViewUrl = 'https://ucarecdn.com/' + uuidMatch[1] + '/';
+            }
             var pdfLink = document.createElement('a');
-            pdfLink.href = f.url;
+            pdfLink.href = pdfViewUrl;
             pdfLink.target = '_blank';
-            pdfLink.download = f.name;
             pdfLink.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:8px;font-size:12px;text-decoration:none;margin:2px;font-weight:600;border:1.5px solid #fde68a;';
-            pdfLink.innerHTML = '📄 ' + f.name + ' &nbsp;<span style="font-size:10px;opacity:0.7;">(Download)</span>';
+            pdfLink.innerHTML = '📄 ' + f.name;
             attachDiv.appendChild(pdfLink);
           } else {
             var a2 = document.createElement('a');
@@ -1367,28 +1372,29 @@ function removeQAFile(index) {
 }
 
 
-// ===== CLOUDINARY FILE UPLOAD =====
-var CLOUDINARY_CLOUD = 'dvc0xqoqw';
-var CLOUDINARY_PRESET = 'onclicksolutions';
+// ===== UPLOADCARE FILE UPLOAD =====
+var UPLOADCARE_KEY = '61272880552672ca7a71';
 
 async function uploadFilesToCloudinary(files, refId) {
   var uploaded = [];
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
     try {
-      var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-      var resourceType = isPDF ? 'raw' : 'auto';
       var formData = new FormData();
+      formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
+      formData.append('UPLOADCARE_STORE', '1');
       formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_PRESET);
-      formData.append('folder', 'onclicksolutions/' + refId);
-      var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/' + resourceType + '/upload', {
+      var res = await fetch('https://upload.uploadcare.com/base/', {
         method: 'POST',
         body: formData
       });
       var data = await res.json();
-      if (data.secure_url) {
-        uploaded.push({ name: file.name, url: data.secure_url });
+      if (data.file) {
+        var fileUUID = data.file;
+        var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
+        // Uploadcare CDN URL - PDF gets viewer URL, images get direct URL
+        var fileUrl = 'https://ucarecdn.com/' + fileUUID + '/' + file.name;
+        uploaded.push({ name: file.name, url: fileUrl, uuid: fileUUID, isPDF: isPDF });
       }
     } catch(e) {
       console.error('Upload failed:', file.name, e);
