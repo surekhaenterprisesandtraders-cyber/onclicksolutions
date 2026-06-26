@@ -942,29 +942,13 @@ function renderAdmin() {
         a.fileURLs.forEach(function(f) {
           var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
           if (isPDF) {
-            var thumbUrl = f.url.replace('/raw/upload/', '/image/upload/pg_1,w_300/').replace('/image/upload/', '/image/upload/pg_1,w_300/');
-            thumbUrl = thumbUrl.replace(/\.pdf$/i, '.jpg');
-            var wrapper = document.createElement('div');
-            wrapper.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;gap:4px;margin:4px;vertical-align:top;';
-            var link = document.createElement('a');
-            link.href = f.url; link.target = '_blank'; link.download = f.name;
-            var img = document.createElement('img');
-            img.src = thumbUrl;
-            img.style.cssText = 'width:80px;height:110px;object-fit:cover;border-radius:6px;border:2px solid var(--primary-light);box-shadow:0 2px 8px rgba(0,0,0,0.15);';
-            var fallback = document.createElement('div');
-            fallback.style.cssText = 'display:none;width:80px;height:110px;background:var(--primary-light);border-radius:6px;align-items:center;justify-content:center;font-size:28px;';
-            fallback.textContent = '📄';
-            img.onerror = function() { img.style.display='none'; fallback.style.display='flex'; };
-            link.appendChild(img);
-            link.appendChild(fallback);
-            var dlLink = document.createElement('a');
-            dlLink.href = f.url; dlLink.target = '_blank'; dlLink.download = f.name;
-            dlLink.style.cssText = 'font-size:10px;color:var(--primary);text-decoration:none;font-weight:500;text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-            dlLink.title = f.name;
-            dlLink.textContent = '⬇ ' + f.name;
-            wrapper.appendChild(link);
-            wrapper.appendChild(dlLink);
-            attachDiv.appendChild(wrapper);
+            var pdfLink = document.createElement('a');
+            pdfLink.href = f.url;
+            pdfLink.target = '_blank';
+            pdfLink.download = f.name;
+            pdfLink.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:8px;font-size:12px;text-decoration:none;margin:2px;font-weight:600;border:1.5px solid #fde68a;';
+            pdfLink.innerHTML = '📄 ' + f.name + ' &nbsp;<span style="font-size:10px;opacity:0.7;">(Download)</span>';
+            attachDiv.appendChild(pdfLink);
           } else {
             var a2 = document.createElement('a');
             a2.href = f.url; a2.target = '_blank';
@@ -1017,7 +1001,7 @@ function renderAdmin() {
       var qBtn = document.createElement('button');
       qBtn.className = 'btn btn-primary';
       qBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#059669;';
-      qBtn.textContent = '&#128232; Send Quote';
+      qBtn.innerHTML = '📤 Send Quote';
       qBtn.addEventListener('click', (function(app){ return function(){ sendQuoteNew(app.docId, app.service, app.name, app.phone, app.refId||'', app.email||''); }; })(a));
 
       actDiv.appendChild(sel);
