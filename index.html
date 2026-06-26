@@ -939,8 +939,12 @@ function renderAdmin() {
         fileLinksHTML = '<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;color:var(--gray);margin-bottom:4px;">&#128206; Attachments (' + a.fileURLs.length + '):</div>'
           + a.fileURLs.map(function(f) {
               var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
-              var viewUrl = isPDF ? 'https://docs.google.com/viewer?url=' + encodeURIComponent(f.url) + '&embedded=false' : f.url;
-              var icon = isPDF ? '&#128209;' : '&#128196;';
+              var icon = isPDF ? '&#128209;' : '&#128247;';
+              // For PDFs: modify Cloudinary URL to force inline viewing (replace /upload/ with /upload/fl_inline/)
+              var viewUrl = f.url;
+              if (isPDF && f.url && f.url.includes('/upload/')) {
+                viewUrl = f.url.replace('/upload/', '/upload/fl_inline/');
+              }
               return '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:6px;font-size:11px;text-decoration:none;margin:2px;font-weight:500;">' + icon + ' ' + f.name + '</a>';
             }).join('') + '</div>';
       }
