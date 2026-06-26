@@ -940,7 +940,7 @@ function renderAdmin() {
           + a.fileURLs.map(function(f) {
               var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
               var icon = isPDF ? '&#128209;' : '&#128247;';
-              var viewUrl = isPDF ? 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(f.url) : f.url;
+              var viewUrl = f.url;
               return '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:6px;font-size:11px;text-decoration:none;margin:2px;font-weight:500;">' + icon + ' ' + f.name + '</a>';
             }).join('') + '</div>';
       }
@@ -1361,11 +1361,13 @@ async function uploadFilesToCloudinary(files, refId) {
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
     try {
+      var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
+      var resourceType = isPDF ? 'raw' : 'auto';
       var formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_PRESET);
       formData.append('folder', 'onclicksolutions/' + refId);
-      var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/auto/upload', {
+      var res = await fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/' + resourceType + '/upload', {
         method: 'POST',
         body: formData
       });
