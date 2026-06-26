@@ -944,9 +944,9 @@ function renderAdmin() {
           if (isPDF) {
             // Extract UUID from Uploadcare URL
             var pdfViewUrl = f.url;
-            var uuidMatch = f.url.match(/ucarecdn\.com\/([a-f0-9\-]+)\//);
+            var uuidMatch = f.url.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/);
             if (uuidMatch) {
-              pdfViewUrl = 'https://ucarecdn.com/' + uuidMatch[1] + '/';
+              pdfViewUrl = 'https://2rz0648lib.ucarecd.net/' + uuidMatch[1] + '/';
             }
             var pdfLink = document.createElement('a');
             pdfLink.href = pdfViewUrl;
@@ -1392,8 +1392,7 @@ async function uploadFilesToCloudinary(files, refId) {
       if (data.file) {
         var fileUUID = data.file;
         var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-        // Uploadcare CDN URL - PDF gets viewer URL, images get direct URL
-        var fileUrl = 'https://ucarecdn.com/' + fileUUID + '/' + file.name;
+        var fileUrl = 'https://2rz0648lib.ucarecd.net/' + fileUUID + '/';
         uploaded.push({ name: file.name, url: fileUrl, uuid: fileUUID, isPDF: isPDF });
       }
     } catch(e) {
