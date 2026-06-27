@@ -12,7 +12,316 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>On Click Solutions</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+// ===== LANGUAGE SYSTEM =====
+var currentLang = 'en';
+
+var TRANSLATIONS = {
+  en: {
+    nav_login: 'Login', nav_signup: 'Sign Up',
+    hero_badge: '⚡ Fast • Reliable • Trusted',
+    hero_title: 'All Government Services,<br><span>One Click Away</span>',
+    hero_sub: "From Aadhaar to Company Registration — we handle all your government paperwork so you don't have to.",
+    hero_explore: 'Explore Services', hero_getstarted: 'Get Started Free', hero_quickapply: '📋 Quick Apply',
+    stat_services: 'Services', stat_clients: 'Happy Clients', stat_exp: 'Years Experience', stat_success: 'Success Rate',
+    popular_title: '🔥 Popular Services', trending: 'TRENDING',
+    search_placeholder: 'Search services... (e.g. Aadhaar, GST, Passport)',
+    browse_title: 'Browse by <span>Category</span>',
+    why_title: 'Why Choose <span>Us?</span>',
+    why1_title: 'Fast Processing', why1_desc: 'Most services completed within 2-5 working days with real-time updates.',
+    why2_title: '100% Secure', why2_desc: 'Your documents and data are handled with complete confidentiality.',
+    why3_title: 'Expert Support', why3_desc: 'Our team guides you through every step via WhatsApp, call, or visit.',
+    why4_title: 'Track Anytime', why4_desc: 'Check your application status 24/7 from your phone or laptop.',
+    back_services: '← Back to Services', back_home: '← Back to Home',
+    apply_sub: 'Fill in the details below. Our team will get back to you with pricing & timeline.',
+    label_name: 'Full Name', label_phone: 'Mobile Number', label_email: 'Email Address',
+    label_subservice: 'Sub-service / Specific Requirement', label_notes: 'Additional Notes',
+    label_upload: 'Upload Documents (optional)',
+    upload_text: '<strong>Click to upload</strong> or drag & drop',
+    upload_sub: 'PDF, JPG, PNG up to 10MB each · <strong>Multiple files allowed</strong>',
+    btn_submit: '📨 Submit Enquiry',
+    submit_note: "We'll send you a quote via WhatsApp & SMS within 2-4 hours",
+    ph_name: 'Enter your full name', ph_phone: '+91 XXXXX XXXXX', ph_email: 'your@email.com',
+    ph_notes: 'Describe your requirement in detail...',
+    ph_subservice: 'e.g. Address Update, New Apply...',
+    select_subservice: '-- Select Sub-service --',
+    success_title: 'Enquiry Submitted!',
+    success_sub: 'Your application has been received. Our team will review it and send you a quote via <strong>WhatsApp & SMS</strong> within 2–4 hours.',
+    ref_label: 'Your Reference Number',
+    btn_track: 'Track My Application',
+    dash_title: 'My Applications', dash_sub: 'Track the status of all your service requests',
+    quickapply_title: '📋 Quick Apply — Any Service',
+    quickapply_sub: "Can't find your service? Fill this form and we'll handle it for you!",
+    select_service: '-- Select a Service --',
+    label_select_service: 'Select Service',
+    label_describe: 'Describe Your Requirement',
+    ph_describe: 'Please describe what service or work you need...',
+    ph_qa_notes: 'Any additional details, deadline, or special requirements...',
+    btn_qa_submit: '📨 Submit My Enquiry',
+    modal_welcome: 'Welcome to On Click Solutions',
+    modal_sub: 'Your trusted government service partner',
+    tab_login: 'Login', tab_signup: 'Sign Up',
+    label_password: 'Password', ph_password: 'Enter password',
+    btn_login: 'Login to My Account',
+    forgot_link: 'Forgot Password?', admin_link: 'Admin Login', admin_q: 'Admin?',
+    signup_name: 'Full Name', signup_phone: 'Mobile Number', signup_email: 'Email Address', signup_pass: 'Password',
+    ph_signup_name: 'Your full name', ph_signup_pass: 'Minimum 6 characters',
+    btn_signup: 'Create My Account →',
+    signup_verify: '📧 A verification link will be sent to your email after signup',
+    forgot_title: 'Reset Password', forgot_sub: "We'll send a reset link to your email",
+    forgot_label: 'Registered Email Address', btn_forgot: '📧 Send Reset Link', back_login: '← Back to Login',
+    nav_quickapply: '📋 Quick Apply', nav_myapps: 'My Applications', nav_logout: 'Logout',
+    footer_tagline: 'All Government & Business Services Under One Roof',
+    no_search: 'No services found for',
+    pay_title: 'Complete Payment', pay_sub: 'Scan QR or use UPI to pay',
+    amount_label: 'Amount to Pay', upi_label: 'UPI ID', copy_upi: 'Copy UPI ID', copied: 'Copied!',
+    open_gpay: 'Open GPay', open_phonepe: 'Open PhonePe',
+    payment_note: 'After payment, send screenshot to WhatsApp for confirmation',
+    back_dashboard: '← Back to Dashboard'
+  },
+  hi: {
+    nav_login: 'लॉगिन', nav_signup: 'साइन अप',
+    hero_badge: '⚡ तेज़ • विश्वसनीय • भरोसेमंद',
+    hero_title: 'सभी सरकारी सेवाएं,<br><span>एक क्लिक में</span>',
+    hero_sub: 'आधार से कंपनी रजिस्ट्रेशन तक — हम आपके सभी सरकारी कागज़ात संभालते हैं।',
+    hero_explore: 'सेवाएं देखें', hero_getstarted: 'मुफ्त शुरू करें', hero_quickapply: '📋 त्वरित आवेदन',
+    stat_services: 'सेवाएं', stat_clients: 'खुश ग्राहक', stat_exp: 'वर्षों का अनुभव', stat_success: 'सफलता दर',
+    popular_title: '🔥 लोकप्रिय सेवाएं', trending: 'ट्रेंडिंग',
+    search_placeholder: 'सेवा खोजें... (जैसे आधार, GST, पासपोर्ट)',
+    browse_title: 'श्रेणी के अनुसार <span>खोजें</span>',
+    why_title: 'हमें क्यों चुनें <span>?</span>',
+    why1_title: 'तेज़ प्रोसेसिंग', why1_desc: 'अधिकांश सेवाएं 2-5 कार्यदिवसों में पूरी होती हैं।',
+    why2_title: '100% सुरक्षित', why2_desc: 'आपके दस्तावेज़ और डेटा पूरी गोपनीयता से संभाले जाते हैं।',
+    why3_title: 'विशेषज्ञ सहायता', why3_desc: 'हमारी टीम WhatsApp, कॉल या व्यक्तिगत रूप से मार्गदर्शन करती है।',
+    why4_title: 'कभी भी ट्रैक करें', why4_desc: 'अपने फोन या लैपटॉप से 24/7 आवेदन की स्थिति जांचें।',
+    back_services: '← सेवाओं पर वापस', back_home: '← होम पर वापस',
+    apply_sub: 'नीचे विवरण भरें। हमारी टीम आपको मूल्य और समयसीमा के बारे में बताएगी।',
+    label_name: 'पूरा नाम', label_phone: 'मोबाइल नंबर', label_email: 'ईमेल पता',
+    label_subservice: 'उप-सेवा / विशिष्ट आवश्यकता', label_notes: 'अतिरिक्त नोट्स',
+    label_upload: 'दस्तावेज़ अपलोड करें (वैकल्पिक)',
+    upload_text: '<strong>अपलोड करने के लिए क्लिक करें</strong> या खींचें और छोड़ें',
+    upload_sub: 'PDF, JPG, PNG प्रत्येक 10MB तक · <strong>एकाधिक फ़ाइलें अनुमत</strong>',
+    btn_submit: '📨 आवेदन जमा करें',
+    submit_note: 'हम 2-4 घंटों में WhatsApp और SMS के माध्यम से कोटेशन भेजेंगे',
+    ph_name: 'अपना पूरा नाम दर्ज करें', ph_phone: '+91 XXXXX XXXXX', ph_email: 'your@email.com',
+    ph_notes: 'अपनी आवश्यकता विस्तार से बताएं...',
+    ph_subservice: 'जैसे पता अपडेट, नया आवेदन...',
+    select_subservice: '-- उप-सेवा चुनें --',
+    success_title: 'आवेदन जमा हो गया!',
+    success_sub: 'आपका आवेदन प्राप्त हो गया है। हमारी टीम 2–4 घंटों में <strong>WhatsApp और SMS</strong> से कोटेशन भेजेगी।',
+    ref_label: 'आपका संदर्भ नंबर',
+    btn_track: 'आवेदन ट्रैक करें',
+    dash_title: 'मेरे आवेदन', dash_sub: 'अपने सभी सेवा अनुरोधों की स्थिति ट्रैक करें',
+    quickapply_title: '📋 त्वरित आवेदन — कोई भी सेवा',
+    quickapply_sub: 'सेवा नहीं मिली? यह फॉर्म भरें, हम संभाल लेंगे!',
+    select_service: '-- सेवा चुनें --',
+    label_select_service: 'सेवा चुनें',
+    label_describe: 'अपनी आवश्यकता बताएं',
+    ph_describe: 'कृपया बताएं आपको कौनसी सेवा चाहिए...',
+    ph_qa_notes: 'कोई अतिरिक्त जानकारी, समयसीमा या विशेष आवश्यकता...',
+    btn_qa_submit: '📨 आवेदन जमा करें',
+    modal_welcome: 'On Click Solutions में आपका स्वागत है',
+    modal_sub: 'आपका विश्वसनीय सरकारी सेवा साझेदार',
+    tab_login: 'लॉगिन', tab_signup: 'साइन अप',
+    label_password: 'पासवर्ड', ph_password: 'पासवर्ड दर्ज करें',
+    btn_login: 'मेरे खाते में लॉगिन करें',
+    forgot_link: 'पासवर्ड भूल गए?', admin_link: 'एडमिन लॉगिन', admin_q: 'एडमिन?',
+    signup_name: 'पूरा नाम', signup_phone: 'मोबाइल नंबर', signup_email: 'ईमेल पता', signup_pass: 'पासवर्ड',
+    ph_signup_name: 'आपका पूरा नाम', ph_signup_pass: 'न्यूनतम 6 अक्षर',
+    btn_signup: 'मेरा खाता बनाएं →',
+    signup_verify: '📧 साइनअप के बाद आपके ईमेल पर सत्यापन लिंक भेजा जाएगा',
+    forgot_title: 'पासवर्ड रीसेट करें', forgot_sub: 'हम आपके ईमेल पर रीसेट लिंक भेजेंगे',
+    forgot_label: 'पंजीकृत ईमेल पता', btn_forgot: '📧 रीसेट लिंक भेजें', back_login: '← लॉगिन पर वापस',
+    nav_quickapply: '📋 त्वरित आवेदन', nav_myapps: 'मेरे आवेदन', nav_logout: 'लॉगआउट',
+    footer_tagline: 'एक छत के नीचे सभी सरकारी और व्यापारिक सेवाएं',
+    no_search: 'कोई सेवा नहीं मिली',
+    pay_title: 'भुगतान पूरा करें', pay_sub: 'QR स्कैन करें या UPI से भुगतान करें',
+    amount_label: 'भुगतान राशि', upi_label: 'UPI ID', copy_upi: 'UPI ID कॉपी करें', copied: 'कॉपी हो गया!',
+    open_gpay: 'GPay खोलें', open_phonepe: 'PhonePe खोलें',
+    payment_note: 'भुगतान के बाद पुष्टि के लिए WhatsApp पर स्क्रीनशॉट भेजें',
+    back_dashboard: '← डैशबोर्ड पर वापस'
+  },
+  gu: {
+    nav_login: 'લૉગિન', nav_signup: 'સાઇન અપ',
+    hero_badge: '⚡ ઝડપી • વિશ્વસનીય • ભરોસાપાત્ર',
+    hero_title: 'તમામ સરકારી સેવાઓ,<br><span>એક ક્લિકમાં</span>',
+    hero_sub: 'આધારથી કંપની નોંધણી સુધી — અમે તમારા તમામ સરકારી કાગળો સંભાળીએ છીએ।',
+    hero_explore: 'સેવાઓ જુઓ', hero_getstarted: 'મફત શરૂ કરો', hero_quickapply: '📋 ઝડપી અરજી',
+    stat_services: 'સેવાઓ', stat_clients: 'ખુશ ગ્રાહકો', stat_exp: 'વર્ષોનો અનુભવ', stat_success: 'સફળતા દર',
+    popular_title: '🔥 લોકપ્રિય સેવાઓ', trending: 'ટ્રેન્ડિંગ',
+    search_placeholder: 'સેવા શોધો... (જેમ કે આધાર, GST, પાસપોર્ટ)',
+    browse_title: 'શ્રેણી પ્રમાણે <span>શોધો</span>',
+    why_title: 'અમને શા માટે પસંદ કરો <span>?</span>',
+    why1_title: 'ઝડપી પ્રક્રિયા', why1_desc: 'મોટાભાગની સેવાઓ 2-5 કામકાજના દિવસોમાં પૂર્ણ થાય છે।',
+    why2_title: '100% સુરક્ષિત', why2_desc: 'તમારા દસ્તાવેજો અને ડેટા સંપૂર્ણ ગોપનીયતા સાથે સંભાળવામાં આવે છે।',
+    why3_title: 'નિષ્ણાત સહાય', why3_desc: 'અમારી ટીમ WhatsApp, ફોન અથવા રૂબરૂ માર્ગદર્શન આપે છે।',
+    why4_title: 'ગમે ત્યારે ટ્રૅક કરો', why4_desc: 'તમારા ફોન અથવા લૅપટૉપ પરથી 24/7 અરજી સ્થિતિ જુઓ।',
+    back_services: '← સેવાઓ પર પાછા', back_home: '← હોમ પર પાછા',
+    apply_sub: 'નીચે વિગત ભરો. અમારી ટીમ તમને કિંમત અને સમયમર્યાદા જણાવશે।',
+    label_name: 'પૂરું નામ', label_phone: 'મોબાઇલ નંબર', label_email: 'ઇ-મેઇલ સરનામું',
+    label_subservice: 'પેટા-સેવા / ચોક્કસ જરૂરિયાત', label_notes: 'વધારાની નોંધ',
+    label_upload: 'દસ્તાવેજો અપલોડ કરો (વૈકલ્પિક)',
+    upload_text: '<strong>અપલોડ કરવા ક્લિક કરો</strong> અથવા ખેંચો અને છોડો',
+    upload_sub: 'PDF, JPG, PNG દરેક 10MB સુધી · <strong>અનેક ફાઇલો માન્ય</strong>',
+    btn_submit: '📨 અરજી સબમિટ કરો',
+    submit_note: 'અમે 2-4 કલાકમાં WhatsApp અને SMS દ્વારા ભાવ મોકલીશું',
+    ph_name: 'તમારું પૂરું નામ દાખલ કરો', ph_phone: '+91 XXXXX XXXXX', ph_email: 'your@email.com',
+    ph_notes: 'તમારી જરૂરિયાત વિગતવાર જણાવો...',
+    ph_subservice: 'જેમ કે સરનામું અપડેટ, નવી અરજી...',
+    select_subservice: '-- પેટા-સેવા પસંદ કરો --',
+    success_title: 'અરજી સબમિટ થઈ!',
+    success_sub: 'તમારી અરજી મળી ગઈ છે. અમારી ટીમ 2–4 કલાકમાં <strong>WhatsApp અને SMS</strong> દ્વારા ભાવ મોકલશે।',
+    ref_label: 'તમારો સંદર્ભ નંબર',
+    btn_track: 'અરજી ટ્રૅક કરો',
+    dash_title: 'મારી અરજીઓ', dash_sub: 'તમારી તમામ સેવા વિનંતીઓની સ્થિતિ ટ્રૅક કરો',
+    quickapply_title: '📋 ઝડપી અરજી — કોઈ પણ સેવા',
+    quickapply_sub: 'સેવા ન મળી? આ ફૉર્મ ભરો, અમે સંભાળી લઈશું!',
+    select_service: '-- સેવા પસંદ કરો --',
+    label_select_service: 'સેવા પસંદ કરો',
+    label_describe: 'તમારી જરૂરિયાત જણાવો',
+    ph_describe: 'કૃપા કરીને જણાવો તમને કઈ સેવા જોઈએ છે...',
+    ph_qa_notes: 'કોઈ વધારાની વિગત, સમયમર્યાદા અથવા ખાસ જરૂરિયાત...',
+    btn_qa_submit: '📨 અરજી સબમિટ કરો',
+    modal_welcome: 'On Click Solutions માં આપનું સ્વાગત છે',
+    modal_sub: 'તમારો વિશ્વસનીય સરકારી સેવા ભાગીદાર',
+    tab_login: 'લૉગિન', tab_signup: 'સાઇન અપ',
+    label_password: 'પાસવર્ડ', ph_password: 'પાસવર્ડ દાખલ કરો',
+    btn_login: 'મારા એકાઉન્ટમાં લૉગિન કરો',
+    forgot_link: 'પાસવર્ડ ભૂલ્યા?', admin_link: 'એડમિન લૉગિન', admin_q: 'એડમિન?',
+    signup_name: 'પૂરું નામ', signup_phone: 'મોબાઇલ નંબર', signup_email: 'ઇ-મેઇલ સરનામું', signup_pass: 'પાસવર્ડ',
+    ph_signup_name: 'તમારું પૂરું નામ', ph_signup_pass: 'ઓછામાં ઓછા 6 અક્ષર',
+    btn_signup: 'મારું એકાઉન્ટ બનાવો →',
+    signup_verify: '📧 સાઇનઅપ પછી તમારા ઇ-મેઇલ પર વેરિફિકેશન લિંક મોકલાશે',
+    forgot_title: 'પાસવર્ડ રીસેટ કરો', forgot_sub: 'અમે તમારા ઇ-મેઇલ પર રીસેટ લિંક મોકલીશું',
+    forgot_label: 'નોંધાયેલ ઇ-મેઇલ સરનામું', btn_forgot: '📧 રીસેટ લિંક મોકલો', back_login: '← લૉગિન પર પાછા',
+    nav_quickapply: '📋 ઝડપી અરજી', nav_myapps: 'મારી અરજીઓ', nav_logout: 'લૉગઆઉટ',
+    footer_tagline: 'એક છત નીચે તમામ સરકારી અને વ્યાપારી સેવાઓ',
+    no_search: 'કોઈ સેવા મળી નહીં',
+    pay_title: 'ચુકવણી પૂર્ણ કરો', pay_sub: 'QR સ્કૅન કરો અથવા UPI થી ચુકવણી કરો',
+    amount_label: 'ચૂકવવાની રકમ', upi_label: 'UPI ID', copy_upi: 'UPI ID કૉપિ કરો', copied: 'કૉપિ થઈ!',
+    open_gpay: 'GPay ખોલો', open_phonepe: 'PhonePe ખોલો',
+    payment_note: 'ચુકવણી પછી પુષ્ટિ માટે WhatsApp પર સ્ક્રીનશૉટ મોકલો',
+    back_dashboard: '← ડૅશબોર્ડ પર પાછા'
+  }
+};
+
+function t(key) {
+  return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS['en'][key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  // Update language buttons
+  ['en','hi','gu'].forEach(function(l) {
+    var btn = document.getElementById('lang-' + l);
+    if (!btn) return;
+    if (l === lang) {
+      btn.style.background = 'var(--primary)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'var(--primary)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  });
+  applyTranslations();
+}
+
+function applyTranslations() {
+  var T = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+  // Nav
+  var nl = document.getElementById('nav-login'); if(nl) nl.textContent = T.nav_login;
+  var ns = document.getElementById('nav-signup'); if(ns) ns.textContent = T.nav_signup;
+  // Hero
+  var hb = document.querySelector('.hero-badge'); if(hb) hb.innerHTML = T.hero_badge;
+  var h1 = document.querySelector('.hero h1'); if(h1) h1.innerHTML = T.hero_title;
+  var hp = document.querySelector('.hero > p'); if(hp) hp.textContent = T.hero_sub;
+  var btns = document.querySelectorAll('.hero-btns button');
+  if(btns[0]) btns[0].textContent = T.hero_explore;
+  if(btns[1]) btns[1].textContent = T.hero_getstarted;
+  if(btns[2]) btns[2].innerHTML = T.hero_quickapply;
+  // Stats
+  var statLabels = document.querySelectorAll('.stat-label');
+  var statKeys = ['stat_services','stat_clients','stat_exp','stat_success'];
+  statLabels.forEach(function(el,i){ if(statKeys[i]) el.textContent = T[statKeys[i]]; });
+  // Section titles
+  var st = document.querySelector('#services-section .section-title');
+  if(st) st.innerHTML = T.popular_title + ' <span class="badge-hot">' + T.trending + '</span>';
+  var ss = document.getElementById('serviceSearch');
+  if(ss) ss.placeholder = T.search_placeholder;
+  var bt = document.querySelector('#categories-section .section-title');
+  if(bt) bt.innerHTML = T.browse_title;
+  // Why section
+  var wt = document.querySelector('.why-section .section-title'); if(wt) wt.innerHTML = T.why_title;
+  var whyTitles = document.querySelectorAll('.why-title');
+  var whyDescs = document.querySelectorAll('.why-desc');
+  var wKeys = ['why1','why2','why3','why4'];
+  wKeys.forEach(function(k,i){
+    if(whyTitles[i]) whyTitles[i].textContent = T[k+'_title'];
+    if(whyDescs[i]) whyDescs[i].textContent = T[k+'_desc'];
+  });
+  // Footer
+  var ft = document.querySelector('footer span'); if(ft) ft.textContent = T.footer_tagline;
+  // Apply screen
+  var applyBack = document.querySelector('#screen-apply .back-btn'); if(applyBack) applyBack.innerHTML = T.back_services;
+  var applySub = document.querySelector('#screen-apply .apply-header p'); if(applySub) applySub.textContent = T.apply_sub;
+  var applyLabels = document.querySelectorAll('#screen-apply .form-label');
+  // Apply form placeholders
+  var an = document.getElementById('applyName'); if(an) an.placeholder = T.ph_name;
+  var ap = document.getElementById('applyPhone'); if(ap) ap.placeholder = T.ph_phone;
+  var ae = document.getElementById('applyEmail'); if(ae) ae.placeholder = T.ph_email;
+  var aNote = document.getElementById('applyNotes'); if(aNote) aNote.placeholder = T.ph_notes;
+  var ast = document.getElementById('applySubServiceText'); if(ast) ast.placeholder = T.ph_subservice;
+  var ass = document.getElementById('applySubService');
+  if(ass && ass.options[0]) ass.options[0].textContent = T.select_subservice;
+  var aSubmit = document.querySelector('#screen-apply .btn-submit'); if(aSubmit) aSubmit.innerHTML = T.btn_submit;
+  // Apply form labels
+  var formLabels = document.querySelectorAll('#screen-apply .form-label');
+  var labelKeys = ['label_name','label_phone','label_email','label_subservice','label_notes','label_upload'];
+  formLabels.forEach(function(el,i){
+    if(labelKeys[i]) { var req = el.querySelector('.req'); el.textContent = T[labelKeys[i]]; if(req){ el.appendChild(document.createTextNode(' ')); el.appendChild(req); } }
+  });
+  // Upload box
+  var upBoxP = document.querySelectorAll('#screen-apply .upload-box p');
+  if(upBoxP[0]) upBoxP[0].innerHTML = T.upload_text;
+  if(upBoxP[1]) upBoxP[1].innerHTML = T.upload_sub;
+  var applyNote = document.querySelector('#screen-apply .apply-body > p'); if(applyNote) applyNote.textContent = T.submit_note;
+  // Back btn apply
+  var applyBackBtn = document.querySelector('#screen-apply .back-btn'); if(applyBackBtn) applyBackBtn.innerHTML = T.back_services;
+  // Success screen
+  var st2 = document.querySelector('.success-title'); if(st2) st2.textContent = T.success_title;
+  var ss2 = document.querySelector('.success-sub'); if(ss2) ss2.innerHTML = T.success_sub;
+  var rl = document.querySelector('.ref-label'); if(rl) rl.textContent = T.ref_label;
+  var bt2 = document.querySelector('.success-screen .btn'); if(bt2) bt2.textContent = T.btn_track;
+  var bk2 = document.querySelector('.success-screen .back-btn'); if(bk2) bk2.innerHTML = T.back_home;
+  // Dashboard
+  var dg = document.getElementById('dashGreeting'); if(dg) dg.textContent = T.dash_title;
+  var ds = document.querySelector('#screen-dashboard .dashboard-header p'); if(ds) ds.textContent = T.dash_sub;
+  // Quick apply
+  var qat = document.querySelector('#screen-quickapply .apply-header h2'); if(qat) qat.innerHTML = T.quickapply_title;
+  var qas = document.querySelector('#screen-quickapply .apply-header p'); if(qas) qas.textContent = T.quickapply_sub;
+  var qaName = document.getElementById('qaName'); if(qaName) qaName.placeholder = T.ph_name;
+  var qaPhone = document.getElementById('qaPhone'); if(qaPhone) qaPhone.placeholder = T.ph_phone;
+  var qaEmail = document.getElementById('qaEmail'); if(qaEmail) qaEmail.placeholder = T.ph_email;
+  var qaNotes = document.getElementById('qaNotes'); if(qaNotes) qaNotes.placeholder = T.ph_qa_notes;
+  var qaDesc = document.getElementById('qaOthersDesc'); if(qaDesc) qaDesc.placeholder = T.ph_describe;
+  var qaSubmit = document.querySelector('#screen-quickapply .btn-submit'); if(qaSubmit) qaSubmit.innerHTML = T.btn_qa_submit;
+  var qaService = document.getElementById('qaService'); if(qaService && qaService.options[0]) qaService.options[0].textContent = T.select_service;
+  var qaSubSel = document.getElementById('qaSubService'); if(qaSubSel && qaSubSel.options[0]) qaSubSel.options[0].textContent = T.select_subservice;
+  var qaBack = document.querySelector('#screen-quickapply .back-btn'); if(qaBack) qaBack.innerHTML = T.back_home;
+  // Nav buttons (logged in)
+  var nqa = document.getElementById('navQuickApply'); if(nqa) nqa.innerHTML = T.nav_quickapply;
+  var nma = document.getElementById('navMyApps'); if(nma) nma.textContent = T.nav_myapps;
+  var nlo = document.getElementById('navLogout'); if(nlo) nlo.textContent = T.nav_logout;
+  // Modal
+  var mw = document.querySelector('.modal-header h3'); if(mw) mw.textContent = T.modal_welcome;
+  var ms = document.querySelector('.modal-header p'); if(ms) ms.textContent = T.modal_sub;
+  var tl = document.getElementById('tab-login'); if(tl) tl.textContent = T.tab_login;
+  var ts = document.getElementById('tab-signup'); if(ts) ts.textContent = T.tab_signup;
+}
+
+</script>
 <script>emailjs.init("Fw4qKg-if_y80FNR1");</script>
 <style>
   :root {
@@ -197,8 +506,13 @@
     </div>
   </a>
   <div class="nav-right" id="navRight">
-    <button class="btn btn-outline" onclick="openModal('login')">Login</button>
-    <button class="btn btn-primary" onclick="openModal('signup')">Sign Up</button>
+    <div style="display:flex;align-items:center;gap:6px;margin-right:6px;">
+      <button onclick="setLang('en')" id="lang-en" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">EN</button>
+      <button onclick="setLang('hi')" id="lang-hi" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">हि</button>
+      <button onclick="setLang('gu')" id="lang-gu" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">ગુ</button>
+    </div>
+    <button class="btn btn-outline" onclick="openModal('login')" id="nav-login">Login</button>
+    <button class="btn btn-primary" onclick="openModal('signup')" id="nav-signup">Sign Up</button>
   </div>
 </nav>
 
@@ -631,6 +945,7 @@ const ADMIN_EMAIL = 'admin@onclicksolutions.in';
 function init() {
   renderPopular();
   renderCategories();
+  applyTranslations();
 }
 
 auth.onAuthStateChanged(async function(user) {
