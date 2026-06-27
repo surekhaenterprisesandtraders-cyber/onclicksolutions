@@ -211,6 +211,7 @@ function t(key) {
 
 function setLang(lang) {
   currentLang = lang;
+  try { localStorage.setItem('ocs_lang', lang); } catch(e) {}
   // Update language buttons
   ['en','hi','gu'].forEach(function(l) {
     var btn = document.getElementById('lang-' + l);
@@ -505,12 +506,12 @@ function applyTranslations() {
       <div class="logo-sub">Government &amp; Business Services</div>
     </div>
   </a>
+  <div style="display:flex;align-items:center;gap:6px;margin-right:4px;" id="langSwitcher">
+    <button onclick="setLang('en')" id="lang-en" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">EN</button>
+    <button onclick="setLang('hi')" id="lang-hi" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">हि</button>
+    <button onclick="setLang('gu')" id="lang-gu" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">ગુ</button>
+  </div>
   <div class="nav-right" id="navRight">
-    <div style="display:flex;align-items:center;gap:6px;margin-right:6px;">
-      <button onclick="setLang('en')" id="lang-en" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">EN</button>
-      <button onclick="setLang('hi')" id="lang-hi" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">हि</button>
-      <button onclick="setLang('gu')" id="lang-gu" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">ગુ</button>
-    </div>
     <button class="btn btn-outline" onclick="openModal('login')" id="nav-login">Login</button>
     <button class="btn btn-primary" onclick="openModal('signup')" id="nav-signup">Sign Up</button>
   </div>
@@ -943,6 +944,7 @@ let currentPaymentApp = null;
 const ADMIN_EMAIL = 'admin@onclicksolutions.in';
 
 function init() {
+  try { var saved = localStorage.getItem('ocs_lang'); if(saved) currentLang = saved; } catch(e) {}
   renderPopular();
   renderCategories();
   applyTranslations();
@@ -999,19 +1001,23 @@ function updateNav() {
   } else {
     var btnQA = document.createElement('button');
     btnQA.className = 'btn btn-outline';
-    btnQA.textContent = '📋 Quick Apply';
+    btnQA.id = 'navQuickApply';
+    btnQA.innerHTML = '📋 Quick Apply';
     btnQA.onclick = function() { openQuickApply(); };
     var btnMyApps = document.createElement('button');
     btnMyApps.className = 'btn btn-outline';
+    btnMyApps.id = 'navMyApps';
     btnMyApps.textContent = 'My Applications';
     btnMyApps.onclick = function() { showScreen('dashboard'); renderDashboard(); };
     var btnOut = document.createElement('button');
     btnOut.className = 'btn btn-primary';
+    btnOut.id = 'navLogout';
     btnOut.textContent = 'Logout';
     btnOut.onclick = function() { logout(); };
     navRight.appendChild(btnQA);
     navRight.appendChild(btnMyApps);
     navRight.appendChild(btnOut);
+    applyTranslations();
   }
 }
 
