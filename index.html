@@ -212,20 +212,8 @@ function t(key) {
 function setLang(lang) {
   currentLang = lang;
   try { localStorage.setItem('ocs_lang', lang); } catch(e) {}
-  // Update language buttons
-  ['en','hi','gu'].forEach(function(l) {
-    var btn = document.getElementById('lang-' + l);
-    if (!btn) return;
-    if (l === lang) {
-      btn.style.background = 'var(--primary)';
-      btn.style.color = '#fff';
-      btn.style.borderColor = 'var(--primary)';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--text)';
-      btn.style.borderColor = 'var(--border)';
-    }
-  });
+  var sel = document.getElementById('langSwitcher');
+  if (sel && sel.tagName === 'SELECT') sel.value = lang;
   applyTranslations();
 }
 
@@ -507,11 +495,11 @@ function applyTranslations() {
     </div>
   </a>
   <div class="nav-right" id="navRight">
-    <div style="display:flex;align-items:center;gap:4px;" id="langSwitcher">
-      <button onclick="setLang('en')" id="lang-en" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">EN</button>
-      <button onclick="setLang('hi')" id="lang-hi" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">हि</button>
-      <button onclick="setLang('gu')" id="lang-gu" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">ગુ</button>
-    </div>
+    <select id="langSwitcher" onchange="setLang(this.value)" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text);outline:none;">
+      <option value="en">🌐 EN</option>
+      <option value="hi">हिं</option>
+      <option value="gu">ગુજ</option>
+    </select>
     <button class="btn btn-outline" onclick="openModal('login')" id="nav-login">Login</button>
     <button class="btn btn-primary" onclick="openModal('signup')" id="nav-signup">Sign Up</button>
   </div>
@@ -945,6 +933,8 @@ const ADMIN_EMAIL = 'admin@onclicksolutions.in';
 
 function init() {
   try { var saved = localStorage.getItem('ocs_lang'); if(saved) currentLang = saved; } catch(e) {}
+  var langSel = document.getElementById('langSwitcher');
+  if (langSel) langSel.value = currentLang;
   renderPopular();
   renderCategories();
   applyTranslations();
@@ -986,6 +976,15 @@ function updateNav() {
   var langSwitcher = document.getElementById('langSwitcher');
   navRight.innerHTML = '';
   if (langSwitcher) navRight.appendChild(langSwitcher);
+  else {
+    var sel = document.createElement('select');
+    sel.id = 'langSwitcher';
+    sel.onchange = function(){ setLang(this.value); };
+    sel.style.cssText = 'padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text);outline:none;';
+    sel.innerHTML = '<option value="en">🌐 EN</option><option value="hi">हिं</option><option value="gu">ગુજ</option>';
+    sel.value = currentLang;
+    navRight.appendChild(sel);
+  }
   if (currentUser.role === 'admin') {
     var spanAdmin = document.createElement('span');
     spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
