@@ -218,6 +218,7 @@ function setLang(lang) {
 }
 
 function applyTranslations() {
+  try {
   var T = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
   // Nav
   var nl = document.getElementById('nav-login'); if(nl) nl.textContent = T.nav_login;
@@ -308,6 +309,7 @@ function applyTranslations() {
   var ms = document.querySelector('.modal-header p'); if(ms) ms.textContent = T.modal_sub;
   var tl = document.getElementById('tab-login'); if(tl) tl.textContent = T.tab_login;
   var ts = document.getElementById('tab-signup'); if(ts) ts.textContent = T.tab_signup;
+  } catch(e) { console.error('Translation error:', e); }
 }
 
 </script>
@@ -955,17 +957,22 @@ auth.onAuthStateChanged(async function(user) {
   } else {
         currentUser = null;
     var nr = document.getElementById('navRight');
+    var ls = document.getElementById('langSwitcher');
     nr.innerHTML = '';
+    if (ls) nr.appendChild(ls);
     var btnL = document.createElement('button');
     btnL.className = 'btn btn-outline';
+    btnL.id = 'nav-login';
     btnL.textContent = 'Login';
     btnL.onclick = function(){ openModal('login'); };
     var btnS = document.createElement('button');
     btnS.className = 'btn btn-primary';
+    btnS.id = 'nav-signup';
     btnS.textContent = 'Sign Up';
     btnS.onclick = function(){ openModal('signup'); };
     nr.appendChild(btnL);
     nr.appendChild(btnS);
+    applyTranslations();
     showScreen('home');
   }
 });
