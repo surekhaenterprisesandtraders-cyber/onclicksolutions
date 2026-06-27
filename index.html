@@ -276,9 +276,12 @@
           <label class="form-label">Email Address</label>
           <input class="form-input" id="applyEmail" type="email" placeholder="your@email.com">
         </div>
-        <div class="form-group">
+        <div class="form-group" id="applySubServiceGroup">
           <label class="form-label">Sub-service / Specific Requirement</label>
-          <input class="form-input" id="applySubService" type="text" placeholder="e.g. Address Update, New Apply...">
+          <select class="form-input" id="applySubService" style="display:none;">
+            <option value="">-- Select Sub-service --</option>
+          </select>
+          <input class="form-input" id="applySubServiceText" type="text" placeholder="e.g. Address Update, New Apply...">
         </div>
         <div class="form-group">
           <label class="form-label">Additional Notes</label>
@@ -538,7 +541,7 @@ const SERVICES = {
   "Identity & Personal": {
     icon: "\uD83E\uDEAA",
     services: [
-      { name:"Aadhaar Card", subs:["Address Update","Name Change","Date of Birth Change","Mobile Number Update","Biometric Update"], popular:true },
+      { name:"Aadhaar Card", subs:["New Apply","Address Update","E-Aadhaar PDF","Order PVC (Smart Card)","Mobile Number / Name / Date of Birth / Photo - Change/Update","Other (Please Specify)"], popular:true },
       { name:"PAN Card", subs:["New Apply","Correction"], popular:true },
       { name:"Voter ID", subs:["New Apply","Correction"], popular:false },
       { name:"Passport", subs:["New Passport Apply","Renew Passport","Update / Correction"], popular:true },
@@ -743,10 +746,33 @@ function openApply(serviceName) {
   document.getElementById('applyName').value = currentUser.name || '';
   document.getElementById('applyPhone').value = currentUser.phone || '';
   document.getElementById('applyEmail').value = currentUser.email || '';
-  document.getElementById('applySubService').value = '';
   document.getElementById('applyNotes').value = '';
   document.getElementById('uploadedFiles').innerHTML = '';
   selectedFiles = [];
+
+  // Sub-service dropdown or text
+  var sel = document.getElementById('applySubService');
+  var txt = document.getElementById('applySubServiceText');
+  sel.innerHTML = '<option value="">-- Select Sub-service --</option>';
+  var subs = [];
+  Object.values(SERVICES).forEach(function(data) {
+    var found = data.services.find(function(s){ return s.name === serviceName; });
+    if (found && found.subs) subs = found.subs;
+  });
+  if (subs.length > 0) {
+    subs.forEach(function(sub) {
+      var opt = document.createElement('option');
+      opt.value = sub; opt.textContent = sub;
+      sel.appendChild(opt);
+    });
+    sel.style.display = 'block';
+    txt.style.display = 'none';
+    sel.value = '';
+  } else {
+    sel.style.display = 'none';
+    txt.style.display = 'block';
+    txt.value = '';
+  }
   showScreen('apply');
 }
 
@@ -768,7 +794,11 @@ async function submitApplication() {
   var appData = {
     refId: ref,
     service: currentService,
-    subService: document.getElementById('applySubService').value,
+    subService: (function(){
+      var sel = document.getElementById('applySubService');
+      var txt = document.getElementById('applySubServiceText');
+      return sel.style.display !== 'none' ? sel.value : txt.value;
+    })(),
     notes: document.getElementById('applyNotes').value,
     name: name, phone: phone,
     email: document.getElementById('applyEmail').value,
