@@ -506,12 +506,12 @@ function applyTranslations() {
       <div class="logo-sub">Government &amp; Business Services</div>
     </div>
   </a>
-  <div style="display:flex;align-items:center;gap:6px;margin-right:4px;" id="langSwitcher">
-    <button onclick="setLang('en')" id="lang-en" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">EN</button>
-    <button onclick="setLang('hi')" id="lang-hi" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">हि</button>
-    <button onclick="setLang('gu')" id="lang-gu" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;">ગુ</button>
-  </div>
   <div class="nav-right" id="navRight">
+    <div style="display:flex;align-items:center;gap:4px;" id="langSwitcher">
+      <button onclick="setLang('en')" id="lang-en" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--primary);background:var(--primary);color:#fff;font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">EN</button>
+      <button onclick="setLang('hi')" id="lang-hi" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">हि</button>
+      <button onclick="setLang('gu')" id="lang-gu" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;">ગુ</button>
+    </div>
     <button class="btn btn-outline" onclick="openModal('login')" id="nav-login">Login</button>
     <button class="btn btn-primary" onclick="openModal('signup')" id="nav-signup">Sign Up</button>
   </div>
@@ -982,7 +982,10 @@ auth.onAuthStateChanged(async function(user) {
 function updateNav() {
   var navRight = document.getElementById('navRight');
   if (!currentUser) return;
+  // Save lang switcher before clearing
+  var langSwitcher = document.getElementById('langSwitcher');
   navRight.innerHTML = '';
+  if (langSwitcher) navRight.appendChild(langSwitcher);
   if (currentUser.role === 'admin') {
     var spanAdmin = document.createElement('span');
     spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
