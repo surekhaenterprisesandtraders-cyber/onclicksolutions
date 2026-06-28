@@ -1054,10 +1054,17 @@ function renderAdmin() {
       qBtn.innerHTML = '📤 Send Quote';
       qBtn.addEventListener('click', (function(app){ return function(){ sendQuoteNew(app.docId, app.service, app.name, app.phone, app.refId||'', app.email||''); }; })(a));
 
+      var delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-outline';
+      delBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#fff;color:#dc2626;border-color:#dc2626;';
+      delBtn.innerHTML = '🗑️ Delete';
+      delBtn.addEventListener('click', (function(app){ return function(){ deleteApplication(app.docId, app.name, app.service); }; })(a));
+
       actDiv.appendChild(sel);
       actDiv.appendChild(amtInput);
       actDiv.appendChild(remInput);
       actDiv.appendChild(qBtn);
+      actDiv.appendChild(delBtn);
       div.appendChild(infoDiv);
       div.appendChild(actDiv);
       list.appendChild(div);
@@ -1069,7 +1076,31 @@ async function updateStatus(docId, status) {
   try {
     await db.collection('applications').doc(docId).update({ status: status });
     showToast('Status updated!', 'success');
+    // Send email notification to client
+    try {
+      var appDoc = await db.collection('applications').doc(docId).get();
+      var appData = appDoc.data();
+      if (appData && appData.email) {
+        var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : '🕐';
+        emailjs.send('service_ybsphno', 'template_1eqx68r', {
+          to_email: appData.email,
+          to_name: appData.name || 'Customer',
+          service: appData.service || '',
+          ref_id: appData.refId || '',
+          message: statusEmoji + ' Your application status has been updated to: ' + status + '. Login to your dashboard to check details.',
+          from_name: 'On Click Solutions'
+        });
+      }
+    } catch(emailErr) { console.log('Email notification failed:', emailErr); }
   } catch(e) { showToast('Update failed!', 'error'); }
+}
+
+async function deleteApplication(docId, name, service) {
+  if (!confirm('Delete application of ' + name + ' for ' + service + '? This cannot be undone!')) return;
+  try {
+    await db.collection('applications').doc(docId).delete();
+    showToast('Application deleted!', 'success');
+  } catch(e) { showToast('Delete failed!', 'error'); }
 }
 
 async function sendQuoteNew(docId, service, name, phone, refId, email) {
