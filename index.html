@@ -12,8 +12,16 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>On Click Solutions</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+
+
+</script>
 <script>emailjs.init("Fw4qKg-if_y80FNR1");</script>
+<script>
+// Language stubs (multilingual removed, English only)
+var currentLang = 'en';
+function t(key) { return key; }
+</script>
 <style>
   :root {
     --primary: #1a56db;
@@ -196,10 +204,7 @@
       <div class="logo-sub">Government &amp; Business Services</div>
     </div>
   </a>
-  <div class="nav-right" id="navRight">
-    <button class="btn btn-outline" onclick="openModal('login')">Login</button>
-    <button class="btn btn-primary" onclick="openModal('signup')">Sign Up</button>
-  </div>
+  <div class="nav-right" id="navRight"></div>  </div>
 </nav>
 
 <!-- HOME -->
@@ -555,7 +560,7 @@ const SERVICES = {
       { name:"Voter ID", subs:["New Apply","E-EPIC (Voter ID PDF)","Update/Correction (Name/Address/Date of Birth/Photo)","Other (Please Specify)"], popular:false },
       { name:"Passport", subs:["New Apply","Renew (Re-issue Passport)","Update/Correction (Name/Father's Name/Date of Birth/Address)","Tatkal Passport","Other (Please Specify)"], popular:true },
       { name:"PCC", subs:["Police Clearance Certificate"], popular:false },
-      { name:"Marriage Certificate", subs:["New Apply"], popular:false }
+      { name:"Marriage Certificate", subs:["Apply for Marriage Certificate","Changes/Correction in Marriage Certificate","Other (Please Specify)"], popular:false }
     ]
   },
   "Driving & Vehicle (RTO)": {
@@ -647,8 +652,14 @@ auth.onAuthStateChanged(async function(user) {
     if (isAdmin) { showScreen('admin'); renderAdmin(); }
   } else {
         currentUser = null;
-    var nr = document.getElementById('navRight');
-    nr.innerHTML = '';
+    updateNav();
+    showScreen('home');
+  }
+});
+function updateNav() {
+  var navRight = document.getElementById('navRight');
+  navRight.innerHTML = '';
+  if (!currentUser) {
     var btnL = document.createElement('button');
     btnL.className = 'btn btn-outline';
     btnL.textContent = 'Login';
@@ -657,15 +668,10 @@ auth.onAuthStateChanged(async function(user) {
     btnS.className = 'btn btn-primary';
     btnS.textContent = 'Sign Up';
     btnS.onclick = function(){ openModal('signup'); };
-    nr.appendChild(btnL);
-    nr.appendChild(btnS);
-    showScreen('home');
+    navRight.appendChild(btnL);
+    navRight.appendChild(btnS);
+    return;
   }
-});
-function updateNav() {
-  var navRight = document.getElementById('navRight');
-  if (!currentUser) return;
-  navRight.innerHTML = '';
   if (currentUser.role === 'admin') {
     var spanAdmin = document.createElement('span');
     spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
@@ -684,14 +690,17 @@ function updateNav() {
   } else {
     var btnQA = document.createElement('button');
     btnQA.className = 'btn btn-outline';
-    btnQA.textContent = '📋 Quick Apply';
+    btnQA.id = 'navQuickApply';
+    btnQA.innerHTML = '📋 Quick Apply';
     btnQA.onclick = function() { openQuickApply(); };
     var btnMyApps = document.createElement('button');
     btnMyApps.className = 'btn btn-outline';
+    btnMyApps.id = 'navMyApps';
     btnMyApps.textContent = 'My Applications';
     btnMyApps.onclick = function() { showScreen('dashboard'); renderDashboard(); };
     var btnOut = document.createElement('button');
     btnOut.className = 'btn btn-primary';
+    btnOut.id = 'navLogout';
     btnOut.textContent = 'Logout';
     btnOut.onclick = function() { logout(); };
     navRight.appendChild(btnQA);
