@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OnClick">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="https://placehold.co/192x192/1a56db/white?text=OCS">
 <title>On Click Solutions</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
@@ -21,6 +21,29 @@
 // Language stubs (multilingual removed, English only)
 var currentLang = 'en';
 function t(key) { return key; }
+
+// Dynamic page title
+function setPageTitle(screen) {
+  var titles = {
+    'home': 'On Click Solutions — All Government Services, One Click Away',
+    'dashboard': 'My Applications — On Click Solutions',
+    'admin': 'Admin Panel — On Click Solutions',
+    'apply': 'Apply for Service — On Click Solutions',
+    'payment': 'Payment — On Click Solutions'
+  };
+  document.title = titles[screen] || 'On Click Solutions';
+}
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+      console.log('SW registered:', reg.scope);
+    }).catch(function(err) {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
 </script>
 <style>
   :root {
@@ -1399,6 +1422,7 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-' + name).classList.add('active');
   window.scrollTo({ top:0, behavior:'smooth' });
+  setPageTitle(name);
   if (history.state && history.state.screen !== name) {
     history.pushState({ screen: name }, '', '#' + name);
   } else if (!history.state) {
