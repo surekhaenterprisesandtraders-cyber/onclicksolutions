@@ -1082,6 +1082,7 @@ async function updateStatus(docId, status) {
       var appData = appDoc.data();
       if (appData && appData.email) {
         var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : '🕐';
+        // Client status notification - old template
         emailjs.send('service_ybsphno', 'template_1eqx68r', {
           client_name: appData.name || 'Customer',
           client_phone: appData.phone || '',
@@ -1302,7 +1303,8 @@ function handleQAServiceChange() {
 
 async function sendEmailNotification(appData) {
   try {
-    await emailjs.send("service_ybsphno", "template_1eqx68r", {
+    // Admin notification - new template
+    await emailjs.send("service_ybsphno", "template_twvayxl", {
       client_name: appData.name,
       client_phone: appData.phone,
       client_email: appData.email || 'Not provided',
@@ -1312,19 +1314,20 @@ async function sendEmailNotification(appData) {
       notes: appData.notes || 'None',
       date: appData.date
     });
-  } catch(e) { console.log('Email failed:', e); }
+  } catch(e) { console.log('Admin email failed:', e); }
 }
 
 async function sendQuoteEmail(clientEmail, clientName, service, refId, quote) {
   try {
+    // Client notification - old template with {{client_email}} as To
     await emailjs.send("service_ybsphno", "template_1eqx68r", {
       client_name: clientName,
       client_phone: '',
       client_email: clientEmail,
       service_name: service,
-      sub_service: 'Quote: \u20B9' + quote,
+      sub_service: '💰 Quote: ₹' + quote,
       ref_id: refId,
-      notes: 'Your quote has been sent. Please login to pay.',
+      notes: 'Your quote has been sent. Please login to your dashboard to make payment.',
       date: new Date().toLocaleDateString('en-IN')
     });
   } catch(e) { console.log('Quote email failed:', e); }
