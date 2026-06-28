@@ -1083,12 +1083,14 @@ async function updateStatus(docId, status) {
       if (appData && appData.email) {
         var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : '🕐';
         emailjs.send('service_ybsphno', 'template_1eqx68r', {
-          to_email: appData.email,
-          to_name: appData.name || 'Customer',
-          service: appData.service || '',
+          client_name: appData.name || 'Customer',
+          client_phone: appData.phone || '',
+          client_email: appData.email,
+          service_name: appData.service || '',
+          sub_service: statusEmoji + ' Status updated to: ' + status,
           ref_id: appData.refId || '',
-          message: statusEmoji + ' Your application status has been updated to: ' + status + '. Login to your dashboard to check details.',
-          from_name: 'On Click Solutions'
+          notes: 'Login to your dashboard to check details.',
+          date: new Date().toLocaleDateString('en-IN')
         });
       }
     } catch(emailErr) { console.log('Email notification failed:', emailErr); }
