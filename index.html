@@ -1059,7 +1059,7 @@ function renderDashboard() {
       if (a.quote && a.paymentRequested) {
         var payBtn = document.createElement('button');
         payBtn.style.cssText = 'background:#10b981;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
-        payBtn.textContent = '&#128179; Pay \u20B9' + a.quote;
+        payBtn.innerHTML = '💳 Pay ₹' + a.quote;
         payBtn.addEventListener('click', (function(app){ return function(){ openPayment(app); }; })(a));
         actionDiv.appendChild(payBtn);
       }
