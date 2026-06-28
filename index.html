@@ -990,15 +990,12 @@ function renderAdmin() {
         a.fileURLs.forEach(function(f) {
           var isPDF = f.name && f.name.toLowerCase().endsWith('.pdf');
           if (isPDF) {
-            // Extract UUID from Uploadcare URL
-            var pdfViewUrl = f.url;
             var uuidMatch = f.url.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/);
-            if (uuidMatch) {
-              pdfViewUrl = 'https://ucarecdn.com/' + uuidMatch[1] + '/';
-            }
+            var pdfViewUrl = uuidMatch ? 'https://ucarecdn.com/' + uuidMatch[1] + '/' + encodeURIComponent(f.name) : f.url;
             var pdfLink = document.createElement('a');
             pdfLink.href = pdfViewUrl;
             pdfLink.target = '_blank';
+            pdfLink.rel = 'noopener noreferrer';
             pdfLink.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:8px;font-size:12px;text-decoration:none;margin:2px;font-weight:600;border:1.5px solid #fde68a;';
             pdfLink.innerHTML = '📄 ' + f.name;
             attachDiv.appendChild(pdfLink);
