@@ -541,13 +541,18 @@ if ('serviceWorker' in navigator) {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="dash-label" style="margin:0;">Revenue</div>
         <select id="revenueFilter" onchange="updateRevenueFilter()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;color:var(--dark);cursor:pointer;">
-          <option value="all">All Time</option>
-          <option value="monthly">This Month</option>
+          <option value="monthly" selected>This Month</option>
           <option value="quarterly">This Quarter</option>
           <option value="yearly">This Year</option>
+          <option value="all">All Time</option>
+          <option value="custom">Custom Date</option>
         </select>
       </div>
       <div class="dash-num" id="adminRevenue" style="color:#059669;">₹0</div>
+      <div id="revenueCustomDate" style="display:none;margin-top:6px;">
+        <input type="date" id="revenueDate" onchange="updateRevenueFilter()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;width:100%;">
+      </div>
+      <div id="revenueLabel" style="font-size:10px;color:var(--gray);margin-top:4px;"></div>
     </div>
   </div>
   <div style="padding:0 24px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -1314,9 +1319,9 @@ function renderAdmin() {
     document.getElementById('adminPending').textContent = apps.filter(function(a){ return a.status==='Pending'; }).length;
     document.getElementById('adminProgress').textContent = apps.filter(function(a){ return a.status==='In Progress'; }).length;
     document.getElementById('adminDone').textContent = apps.filter(function(a){ return a.status==='Completed'; }).length;
-    var totalRevenue = apps.reduce(function(sum, a){ return sum + (a.quote ? parseInt(a.quote) || 0 : 0); }, 0);
     var revenueEl = document.getElementById('adminRevenue');
-    if (revenueEl) revenueEl.textContent = '₹' + totalRevenue.toLocaleString('en-IN');
+    if (revenueEl) revenueEl.textContent = '₹0';
+    updateRevenueFilter();
 
     renderAdminList(apps);
   }, function(err) { console.error('Admin error:', err); });
@@ -1834,12 +1839,19 @@ function exportToCSV() {
 
 function updateRevenueFilter() {
   var filter = document.getElementById('revenueFilter').value;
+  var customDiv = document.getElementById('revenueCustomDate');
+  var labelEl = document.getElementById('revenueLabel');
   var now = new Date();
+
+  // Show/hide custom date
+  if (customDiv) customDiv.style.display = filter === 'custom' ? 'block' : 'none';
+
   var filtered = _allAdminApps.filter(function(a) {
-    if (!a.date) return filter === 'all';
+    if (!a.date) return false;
     var parts = a.date.split('/');
-    if (parts.length < 3) return filter === 'all';
+    if (parts.length < 3) return false;
     var appDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+
     if (filter === 'monthly') {
       return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
     } else if (filter === 'quarterly') {
@@ -1848,11 +1860,22 @@ function updateRevenueFilter() {
       return appQ === nowQ && appDate.getFullYear() === now.getFullYear();
     } else if (filter === 'yearly') {
       return appDate.getFullYear() === now.getFullYear();
+    } else if (filter === 'custom') {
+      var dateInput = document.getElementById('revenueDate').value;
+      if (!dateInput) return true;
+      var dp = dateInput.split('-');
+      var customDate = dp[2] + '/' + dp[1] + '/' + dp[0];
+      return a.date === customDate;
     }
-    return true;
+    return true; // all
   });
+
   var total = filtered.reduce(function(sum, a) { return sum + (a.quote ? parseInt(a.quote) || 0 : 0); }, 0);
   document.getElementById('adminRevenue').textContent = '₹' + total.toLocaleString('en-IN');
+
+  // Label
+  var labels = { monthly: 'This Month', quarterly: 'This Quarter', yearly: 'This Year', all: 'All Time', custom: 'Selected Date' };
+  if (labelEl) labelEl.textContent = (labels[filter] || '') + ' · ' + filtered.length + ' apps';
 }
 
 function downloadReceiptFromApp(app) {
