@@ -550,6 +550,32 @@ if ('serviceWorker' in navigator) {
       <div class="dash-num" id="adminRevenue" style="color:#059669;">₹0</div>
     </div>
   </div>
+  <div style="padding:0 24px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <select id="filterStatus" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
+      <option value="">All Status</option>
+      <option value="Pending">Pending</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Completed">Completed</option>
+    </select>
+    <select id="filterService" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
+      <option value="">All Services</option>
+      <option>Aadhaar Card</option>
+      <option>PAN Card</option>
+      <option>Voter ID</option>
+      <option>Passport</option>
+      <option>Driving License</option>
+      <option>GST Registration</option>
+      <option>ITR Filing</option>
+      <option>Business Registration</option>
+      <option>Marriage Certificate</option>
+      <option>Caste Certificate</option>
+      <option>Domicile Certificate</option>
+    </select>
+    <input type="date" id="filterDate" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
+    <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:200px;">
+    <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Clear</button>
+    <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">📥 Export CSV</button>
+  </div>
   <div class="applications-list" id="adminList"></div>
 </div>
 
@@ -1292,9 +1318,14 @@ function renderAdmin() {
     var revenueEl = document.getElementById('adminRevenue');
     if (revenueEl) revenueEl.textContent = '₹' + totalRevenue.toLocaleString('en-IN');
 
+    renderAdminList(apps);
+  }, function(err) { console.error('Admin error:', err); });
+}
+
+function renderAdminList(apps) {
     var list = document.getElementById('adminList');
     if (apps.length === 0) {
-      list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--gray);">No applications yet.</div>';
+      list.innerHTML = '<div style="text-align:center;padding:48px;color:var(--gray);">No applications found.</div>';
       return;
     }
     list.innerHTML = '';
@@ -1397,7 +1428,6 @@ function renderAdmin() {
       div.appendChild(actDiv);
       list.appendChild(div);
     });
-  });
 }
 
 async function updateStatus(docId, status) {
@@ -1747,6 +1777,60 @@ document.addEventListener('click', function(e) {
 
 // Store all apps for revenue filter
 var _allAdminApps = [];
+
+function applyAdminFilters() {
+  var status = document.getElementById('filterStatus').value;
+  var service = document.getElementById('filterService').value;
+  var date = document.getElementById('filterDate').value;
+  var search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+  var filtered = _allAdminApps.filter(function(a) {
+    if (status && a.status !== status) return false;
+    if (service && a.service !== service) return false;
+    if (date) {
+      var parts = date.split('-');
+      var filterDateStr = parts[2] + '/' + parts[1] + '/' + parts[0];
+      if (a.date !== filterDateStr) return false;
+    }
+    if (search) {
+      var haystack = ((a.name||'') + (a.phone||'') + (a.refId||'') + (a.email||'')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+  renderAdminList(filtered);
+}
+
+function clearAdminFilters() {
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterService').value = '';
+  document.getElementById('filterDate').value = '';
+  document.getElementById('filterSearch').value = '';
+  renderAdminList(_allAdminApps);
+}
+
+function exportToCSV() {
+  if (!_allAdminApps.length) { showToast('No data to export!', 'error'); return; }
+  var headers = ['Ref ID','Date','Name','Phone','Email','Service','Sub-service','Notes','Status','Quote','Remark'];
+  var rows = _allAdminApps.map(function(a) {
+    return [
+      a.refId||'', a.date||'', a.name||'', a.phone||'', a.email||'',
+      a.service||'', a.subService||'', (a.notes||'').replace(/,/g,' '),
+      a.status||'', a.quote||'', (a.remark||'').replace(/,/g,' ')
+    ].join(',');
+  });
+  var csv = [headers.join(','), ...rows].join('\n');
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'OnClickSolutions-Applications-' + new Date().toLocaleDateString('en-IN').replace(/\//g,'-') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSV exported! ✅', 'success');
+}
 
 function updateRevenueFilter() {
   var filter = document.getElementById('revenueFilter').value;
