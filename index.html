@@ -1575,7 +1575,7 @@ function updateRevenueFilter() {
 
 function downloadReceiptFromApp(app) {
   try {
-    var jsPDF = window.jspdf.jsPDF;
+    var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     var doc = new jsPDF({ unit: 'mm', format: 'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 18;
