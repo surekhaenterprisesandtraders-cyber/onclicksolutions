@@ -8,9 +8,91 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OnClick">
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="On Click Solutions — Mumbai's trusted government & business services consultancy. Aadhaar, PAN, Passport, Voter ID, GST, Driving License, Business Registration & more. Apply online, track status, pay securely.">
+<meta name="keywords" content="Aadhaar card Mumbai, PAN card apply, Passport services Mumbai, Voter ID, GST registration, Driving License, government services Mumbai, document services, On Click Solutions, Rahul Patwaa">
+<meta name="author" content="Rahul Patwaa, On Click Solutions">
+<meta name="robots" content="index, follow">
+<meta name="language" content="English">
+<meta name="revisit-after" content="7 days">
+<link rel="canonical" href="https://surekhaenterprisesandtraders-cyber.github.io/onclicksolutions/">
+
+<!-- Open Graph (Facebook, WhatsApp) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://surekhaenterprisesandtraders-cyber.github.io/onclicksolutions/">
+<meta property="og:title" content="On Click Solutions — All Government Services, One Click Away">
+<meta property="og:description" content="Mumbai's trusted government & business services consultancy. Aadhaar, PAN, Passport, Voter ID, GST, Driving License & more. Apply online in minutes!">
+<meta property="og:image" content="https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:site_name" content="On Click Solutions">
+<meta property="og:locale" content="en_IN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="On Click Solutions — All Government Services, One Click Away">
+<meta name="twitter:description" content="Mumbai's trusted government & business services. Aadhaar, PAN, Passport, GST & more. Apply online!">
+<meta name="twitter:image" content="https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png">
+
+<!-- Google Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "On Click Solutions",
+  "description": "Mumbai's trusted government and business services consultancy",
+  "url": "https://surekhaenterprisesandtraders-cyber.github.io/onclicksolutions/",
+  "logo": "https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png",
+  "image": "https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png",
+  "telephone": "+91-97271-38236",
+  "email": "admin@onclicksolutions.in",
+  "founder": "Rahul Patwaa",
+  "foundingDate": "2014",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Mumbai",
+    "addressRegion": "Maharashtra",
+    "addressCountry": "IN"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "19.0760",
+    "longitude": "72.8777"
+  },
+  "openingHours": "Mo-Sa 09:00-20:00",
+  "priceRange": "₹₹",
+  "sameAs": [
+    "https://wa.me/919727138236"
+  ],
+  "serviceType": ["Aadhaar Card", "PAN Card", "Passport", "Voter ID", "GST Registration", "Driving License", "Business Registration"]
+}
+</script>
+<meta name="robots" content="index, follow">
+<meta name="geo.region" content="IN-MH">
+<meta name="geo.placename" content="Mumbai, Maharashtra">
+
+<!-- Open Graph (WhatsApp, Facebook preview) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="On Click Solutions — All Government Services, One Click Away">
+<meta property="og:description" content="Mumbai's trusted government & business services consultancy. Aadhaar, PAN, Passport, GST, Driving License & 50+ services. Apply online!">
+<meta property="og:image" content="https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png">
+<meta property="og:url" content="https://surekhaenterprisesandtraders-cyber.github.io/onclicksolutions/">
+<meta property="og:site_name" content="On Click Solutions">
+<meta property="og:locale" content="en_IN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="On Click Solutions — All Government Services, One Click Away">
+<meta name="twitter:description" content="Mumbai's trusted government & business services consultancy. Apply online for Aadhaar, PAN, Passport, GST & 50+ services!">
+<meta name="twitter:image" content="https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="https://surekhaenterprisesandtraders-cyber.github.io/onclicksolutions/">
+
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png">
-<title>On Click Solutions</title>
+<title>On Click Solutions — All Government Services, One Click Away | Mumbai</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
 
@@ -854,11 +936,27 @@ auth.onAuthStateChanged(async function(user) {
       role: isAdmin ? 'admin' : 'client'
     };
     updateNav();
-    if (isAdmin) { showScreen('admin'); renderAdmin(); }
+    // Restore page from URL hash on refresh
+    var hash = window.location.hash.replace('#', '');
+    if (isAdmin) {
+      showScreen('admin'); renderAdmin();
+    } else if (hash === 'dashboard') {
+      showScreen('dashboard'); renderDashboard();
+    } else if (hash === 'about') {
+      showScreen('about');
+    } else {
+      showScreen('home');
+    }
   } else {
-        currentUser = null;
+    currentUser = null;
     updateNav();
-    showScreen('home');
+    // Restore public pages from hash
+    var hash = window.location.hash.replace('#', '');
+    if (hash === 'about') {
+      showScreen('about');
+    } else {
+      showScreen('home');
+    }
   }
 });
 function updateNav() {
