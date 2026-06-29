@@ -307,7 +307,7 @@ if ('serviceWorker' in navigator) {
     <div class="stats-row">
       <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Services</div></div>
       <div class="stat"><div class="stat-num">1000+</div><div class="stat-label">Happy Clients</div></div>
-      <div class="stat"><div class="stat-num">7</div><div class="stat-label">Years Experience</div></div>
+      <div class="stat"><div class="stat-num">10</div><div class="stat-label">Years Experience</div></div>
       <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Success Rate</div></div>
     </div>
   </div>
@@ -350,7 +350,10 @@ if ('serviceWorker' in navigator) {
   <footer>
     <strong>On Click Solutions</strong> &middot; Mumbai, Maharashtra<br>
     &#128100; Founder: <strong>Rahul Patwaa</strong> &nbsp;&middot;&nbsp; &#128222; +91 97271 38236<br>
-    <span>All Government &amp; Business Services Under One Roof</span>
+    <span>All Government &amp; Business Services Under One Roof</span><br>
+    <a href="#" onclick="event.preventDefault();showScreen('about')" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:12px;margin-top:6px;display:inline-block;">About Us</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://wa.me/919727138236" target="_blank" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:12px;">WhatsApp Us</a>
   </footer>
 </div>
 
@@ -597,6 +600,103 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <!-- PAYMENT -->
+<div id="screen-about" class="screen">
+  <div style="background:linear-gradient(135deg,#1a56db,#1e3a8a);color:white;padding:48px 24px 56px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🏢</div>
+    <h1 style="font-family:'Poppins',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;">About Us</h1>
+    <p style="font-size:15px;opacity:0.85;max-width:500px;margin:0 auto;">Your trusted partner for all government & business services</p>
+  </div>
+
+  <div style="max-width:800px;margin:0 auto;padding:40px 24px;">
+
+    <!-- Who We Are -->
+    <div style="background:white;border-radius:16px;padding:28px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);">
+      <h2 style="font-family:'Poppins',sans-serif;font-size:20px;color:var(--primary);margin-bottom:12px;">🎯 Who We Are</h2>
+      <p style="color:var(--gray);line-height:1.8;font-size:14px;">On Click Solutions is a Mumbai-based government and business services consultancy founded with a simple mission — to make government paperwork and documentation easy, fast, and affordable for every citizen. We handle all the complex processes so you don't have to.</p>
+    </div>
+
+    <!-- Founder -->
+    <div style="background:white;border-radius:16px;padding:28px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);">
+      <h2 style="font-family:'Poppins',sans-serif;font-size:20px;color:var(--primary);margin-bottom:16px;">👤 Our Founder</h2>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="width:72px;height:72px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;">👨‍💼</div>
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--dark);">Rahul Patwaa</div>
+          <div style="color:var(--primary);font-size:13px;font-weight:600;margin-bottom:6px;">Founder & CEO</div>
+          <p style="color:var(--gray);font-size:13px;line-height:1.7;">With over 10 years of experience in government documentation and business services, Rahul has helped thousands of clients across Mumbai get their documents processed quickly and correctly.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+      <div style="background:var(--primary);color:white;border-radius:12px;padding:20px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;">50+</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:4px;">Services</div>
+      </div>
+      <div style="background:#059669;color:white;border-radius:12px;padding:20px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;">1000+</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:4px;">Happy Clients</div>
+      </div>
+      <div style="background:#d97706;color:white;border-radius:12px;padding:20px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;">10+</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:4px;">Years Experience</div>
+      </div>
+      <div style="background:#7c3aed;color:white;border-radius:12px;padding:20px;text-align:center;">
+        <div style="font-size:28px;font-weight:800;">98%</div>
+        <div style="font-size:12px;opacity:0.85;margin-top:4px;">Success Rate</div>
+      </div>
+    </div>
+
+    <!-- Why Choose Us -->
+    <div style="background:white;border-radius:16px;padding:28px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);">
+      <h2 style="font-family:'Poppins',sans-serif;font-size:20px;color:var(--primary);margin-bottom:16px;">✅ Why Choose Us</h2>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">⚡</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">Fast Processing</div><div style="font-size:12px;color:var(--gray);">Quick turnaround on all services</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">💰</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">Affordable Charges</div><div style="font-size:12px;color:var(--gray);">Transparent pricing, no hidden fees</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">🔒</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">100% Secure</div><div style="font-size:12px;color:var(--gray);">Your documents are safe with us</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">📱</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">Online Tracking</div><div style="font-size:12px;color:var(--gray);">Track status anytime, anywhere</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">🤝</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">Expert Guidance</div><div style="font-size:12px;color:var(--gray);">10+ years of experience</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:20px;">💬</span>
+          <div><div style="font-weight:600;font-size:14px;color:var(--dark);">WhatsApp Support</div><div style="font-size:12px;color:var(--gray);">Always available on WhatsApp</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div style="background:linear-gradient(135deg,#1a56db,#1e3a8a);color:white;border-radius:16px;padding:28px;text-align:center;">
+      <h2 style="font-family:'Poppins',sans-serif;font-size:20px;margin-bottom:16px;">📞 Contact Us</h2>
+      <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:20px;">
+        <div><div style="font-size:24px;">📱</div><div style="font-size:13px;opacity:0.85;margin-top:4px;">+91 97271 38236</div></div>
+        <div><div style="font-size:24px;">📍</div><div style="font-size:13px;opacity:0.85;margin-top:4px;">Mumbai, Maharashtra</div></div>
+        <div><div style="font-size:24px;">✉️</div><div style="font-size:13px;opacity:0.85;margin-top:4px;">admin@onclicksolutions.in</div></div>
+      </div>
+      <a href="https://wa.me/919727138236?text=Hello%20On%20Click%20Solutions!%20I%20want%20to%20inquire%20about%20your%20services." target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:white;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">
+        💬 Chat on WhatsApp
+      </a>
+    </div>
+
+    <br>
+    <button class="back-btn" onclick="showScreen('home')" style="justify-content:center;width:100%;">← Back to Home</button>
+  </div>
+</div>
+
 <div id="screen-payment" class="screen">
   <div class="apply-container">
     <button class="back-btn" onclick="showScreen('dashboard');renderDashboard()">&#8592; Back to My Applications</button>
