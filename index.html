@@ -336,6 +336,7 @@ if ('serviceWorker' in navigator) {
     .categories-grid { grid-template-columns:repeat(2,1fr) !important; gap:12px; }
     .popular-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
     .dash-grid { grid-template-columns:repeat(2,1fr); padding:16px; }
+    .about-stats-grid { grid-template-columns:repeat(2,1fr) !important; }
     #filterStatus, #filterService, #filterDate, #filterSearch, button { max-width:100%; }
     .app-item, .applications-list > div { overflow-x:hidden; }
     .applications-list { padding:0 12px !important; }
@@ -784,7 +785,7 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <!-- Stats -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+    <div class="about-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
       <div style="background:var(--primary);color:white;border-radius:12px;padding:20px;text-align:center;">
         <div style="font-size:28px;font-weight:800;">50+</div>
         <div style="font-size:12px;opacity:0.85;margin-top:4px;">Services</div>
