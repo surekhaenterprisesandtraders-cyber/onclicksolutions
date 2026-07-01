@@ -1482,6 +1482,11 @@ function renderDashboard() {
       actionDiv.appendChild(rcptBtn);
       // Review button for completed applications
       if (a.status === 'Completed') {
+        var certBtn = document.createElement('button');
+        certBtn.style.cssText = 'background:#059669;color:white;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;';
+        certBtn.innerHTML = '🏆 Certificate';
+        certBtn.addEventListener('click', (function(app){ return function(){ downloadCertificate(app); }; })(a));
+        actionDiv.appendChild(certBtn);
         var revBtn = document.createElement('button');
         revBtn.style.cssText = a.reviewRating
           ? 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;'
@@ -2093,6 +2098,124 @@ function updateRevenueFilter() {
   // Label
   var labels = { monthly: 'This Month', quarterly: 'This Quarter', yearly: 'This Year', all: 'All Time', custom: 'Selected Date' };
   if (labelEl) labelEl.textContent = (labels[filter] || '') + ' · ' + filtered.length + ' apps';
+}
+
+function downloadCertificate(app) {
+  try {
+    var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPDF) { showToast('PDF library not loaded!', 'error'); return; }
+    var doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+    var W = 297; var H = 210;
+
+    // Background
+    doc.setFillColor(245, 247, 255);
+    doc.rect(0, 0, W, H, 'F');
+
+    // Border
+    doc.setDrawColor(26, 86, 219);
+    doc.setLineWidth(3);
+    doc.rect(8, 8, W-16, H-16);
+    doc.setLineWidth(1);
+    doc.setDrawColor(245, 158, 11);
+    doc.rect(11, 11, W-22, H-22);
+
+    // Header
+    doc.setFillColor(26, 86, 219);
+    doc.rect(0, 0, W, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('ON CLICK SOLUTIONS — Government & Business Services, Mumbai', W/2, 12, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text('+91 97271 38236  |  admin@onclicksolutions.in', W/2, 21, { align: 'center' });
+
+    // Certificate title
+    doc.setTextColor(26, 86, 219);
+    doc.setFontSize(32);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CERTIFICATE OF COMPLETION', W/2, 55, { align: 'center' });
+
+    // Gold line
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(1.5);
+    doc.line(40, 60, W-40, 60);
+
+    // Body text
+    doc.setTextColor(50, 50, 80);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'normal');
+    doc.text('This is to certify that the following service has been successfully completed for:', W/2, 75, { align: 'center' });
+
+    // Client name
+    doc.setFontSize(26);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 86, 219);
+    doc.text(app.name || 'Client', W/2, 93, { align: 'center' });
+
+    // Underline
+    doc.setDrawColor(26, 86, 219);
+    doc.setLineWidth(0.8);
+    var nameWidth = doc.getTextWidth(app.name || 'Client');
+    doc.line(W/2 - nameWidth/2, 96, W/2 + nameWidth/2, 96);
+
+    // Service
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 60);
+    doc.text('Service: ' + (app.service || '') + (app.subService ? ' — ' + app.subService : ''), W/2, 110, { align: 'center' });
+
+    // Details
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 90, 110);
+    doc.text('Reference ID: #' + (app.refId || '') + '   |   Completed On: ' + (app.date || new Date().toLocaleDateString('en-IN')), W/2, 123, { align: 'center' });
+
+    // Gold line bottom
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(1.5);
+    doc.line(40, 135, W-40, 135);
+
+    // Signature section
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 60);
+    doc.text('Rahul Patwaa', 70, 158, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 110, 130);
+    doc.text('Founder & CEO', 70, 164, { align: 'center' });
+    doc.text('On Click Solutions', 70, 169, { align: 'center' });
+    doc.setDrawColor(100, 110, 130);
+    doc.setLineWidth(0.5);
+    doc.line(35, 153, 105, 153);
+
+    // Seal circle
+    doc.setFillColor(26, 86, 219);
+    doc.circle(W/2, 158, 18, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.circle(W/2, 158, 15, 'F');
+    doc.setFillColor(26, 86, 219);
+    doc.circle(W/2, 158, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text('OCS', W/2, 156, { align: 'center' });
+    doc.text('VERIFIED', W/2, 162, { align: 'center' });
+
+    // Footer
+    doc.setFillColor(26, 86, 219);
+    doc.rect(0, H-18, W, 18, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('This certificate is digitally issued by On Click Solutions, Mumbai, Maharashtra, India.', W/2, H-8, { align: 'center' });
+
+    doc.save('Certificate-' + (app.refId || 'OCS') + '.pdf');
+    showToast('Certificate downloaded! 🏆', 'success');
+  } catch(e) {
+    console.error('Certificate error:', e);
+    showToast('Certificate generation failed!', 'error');
+  }
 }
 
 function downloadReceiptFromApp(app) {
