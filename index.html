@@ -338,7 +338,7 @@ if ('serviceWorker' in navigator) {
     .section-title { font-size:20px; }
     .categories-grid { grid-template-columns:repeat(2,1fr) !important; gap:12px; }
     .popular-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
-    .dash-grid { grid-template-columns:repeat(2,1fr); padding:16px; }
+    .dash-grid { grid-template-columns:repeat(2,1fr) !important; padding:16px; }
     .about-stats-grid { grid-template-columns:repeat(2,1fr) !important; }
     #filterStatus, #filterService, #filterDate, #filterSearch, button { max-width:100%; }
     .app-item, .applications-list > div { overflow-x:hidden; }
@@ -640,7 +640,7 @@ if ('serviceWorker' in navigator) {
     <h2>All Applications</h2>
     <p>Manage and update client enquiries</p>
   </div>
-  <div class="dash-grid">
+  <div class="dash-grid" style="grid-template-columns:repeat(5,1fr);">
     <div class="dash-card"><div class="dash-num" id="adminTotal">0</div><div class="dash-label">Total Applications</div></div>
     <div class="dash-card"><div class="dash-num" id="adminPending">0</div><div class="dash-label">Pending</div></div>
     <div class="dash-card"><div class="dash-num" id="adminProgress">0</div><div class="dash-label">In Progress</div></div>
