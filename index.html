@@ -1650,6 +1650,25 @@ function renderAdminList(apps) {
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
 
+      // Admin internal notes section
+      var notesBox = document.createElement('div');
+      notesBox.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:#fafafa;border:1.5px solid var(--border);border-radius:10px;';
+      var notesTitle = document.createElement('div');
+      notesTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--gray);margin-bottom:6px;';
+      notesTitle.textContent = '🔒 Internal Notes (Admin only)';
+      var notesArea = document.createElement('textarea');
+      notesArea.placeholder = 'Add private notes about this application...';
+      notesArea.value = a.adminNotes || '';
+      notesArea.style.cssText = 'width:100%;min-height:60px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;';
+      var saveNotesBtn = document.createElement('button');
+      saveNotesBtn.style.cssText = 'margin-top:6px;background:var(--primary);color:white;border:none;padding:5px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;';
+      saveNotesBtn.textContent = 'Save Notes';
+      saveNotesBtn.addEventListener('click', (function(docId, textarea){ return function(){ saveAdminNotes(docId, textarea.value); }; })(a.docId, notesArea));
+      notesBox.appendChild(notesTitle);
+      notesBox.appendChild(notesArea);
+      notesBox.appendChild(saveNotesBtn);
+      actDiv.appendChild(notesBox);
+
       // Admin document upload section
       var uploadBox = document.createElement('div');
       uploadBox.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;';
@@ -2147,6 +2166,15 @@ function updateRevenueFilter() {
   // Label
   var labels = { monthly: 'This Month', quarterly: 'This Quarter', yearly: 'This Year', all: 'All Time', custom: 'Selected Date' };
   if (labelEl) labelEl.textContent = (labels[filter] || '') + ' · ' + filtered.length + ' apps';
+}
+
+async function saveAdminNotes(docId, notes) {
+  try {
+    await db.collection('applications').doc(docId).update({ adminNotes: notes });
+    showToast('Notes saved! 🔒', 'success');
+  } catch(e) {
+    showToast('Failed to save notes!', 'error');
+  }
 }
 
 async function adminUploadDoc(docId, fileInput) {
