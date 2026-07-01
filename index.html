@@ -1503,6 +1503,27 @@ function renderDashboard() {
           actionDiv.appendChild(revStatus);
         }
       }
+      // Admin uploaded documents — client can download
+      if (a.adminDocs && a.adminDocs.length > 0) {
+        var docsSection = document.createElement('div');
+        docsSection.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;';
+        var docsTitle = document.createElement('div');
+        docsTitle.style.cssText = 'font-size:12px;font-weight:700;color:#166534;margin-bottom:8px;';
+        docsTitle.textContent = '📥 Documents from On Click Solutions';
+        docsSection.appendChild(docsTitle);
+        a.adminDocs.forEach(function(d) {
+          var docLink = document.createElement('a');
+          docLink.href = d.url; docLink.target = '_blank';
+          docLink.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:#059669;color:white;padding:7px 14px;border-radius:8px;font-size:12px;text-decoration:none;margin:2px;font-weight:600;';
+          docLink.innerHTML = '⬇️ ' + d.name;
+          docsSection.appendChild(docLink);
+        });
+        div.appendChild(infoDiv);
+        div.appendChild(actionDiv);
+        div.appendChild(docsSection);
+        appList.appendChild(div);
+        return;
+      }
       div.appendChild(infoDiv);
       div.appendChild(actionDiv);
       appList.appendChild(div);
@@ -1633,6 +1654,39 @@ function renderAdminList(apps) {
       actDiv.appendChild(qBtn);
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
+
+      // Admin document upload section
+      var uploadBox = document.createElement('div');
+      uploadBox.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;';
+      var uploadTitle = document.createElement('div');
+      uploadTitle.style.cssText = 'font-size:11px;font-weight:700;color:#166534;margin-bottom:6px;';
+      uploadTitle.textContent = 'Upload Document for Client';
+      uploadBox.appendChild(uploadTitle);
+      if (a.adminDocs && a.adminDocs.length > 0) {
+        var docList = document.createElement('div');
+        docList.style.cssText = 'margin-bottom:8px;';
+        a.adminDocs.forEach(function(d) {
+          var docLink = document.createElement('a');
+          docLink.href = d.url; docLink.target = '_blank';
+          docLink.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:11px;text-decoration:none;margin:2px;font-weight:500;';
+          docLink.textContent = d.name;
+          docList.appendChild(docLink);
+        });
+        uploadBox.appendChild(docList);
+      }
+      var fileRow = document.createElement('div');
+      fileRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
+      var adminFileInput = document.createElement('input');
+      adminFileInput.type = 'file'; adminFileInput.accept = '.pdf,.jpg,.jpeg,.png';
+      adminFileInput.style.cssText = 'font-size:11px;flex:1;min-width:0;';
+      var uploadBtn2 = document.createElement('button');
+      uploadBtn2.style.cssText = 'background:#059669;color:white;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;';
+      uploadBtn2.textContent = 'Upload';
+      uploadBtn2.addEventListener('click', (function(docId, input){ return function(){ adminUploadDoc(docId, input); }; })(a.docId, adminFileInput));
+      fileRow.appendChild(adminFileInput);
+      fileRow.appendChild(uploadBtn2);
+      uploadBox.appendChild(fileRow);
+      actDiv.appendChild(uploadBox);
 
       // Review moderation block - simple publish toggle
       if (a.reviewRating) {
@@ -2098,6 +2152,30 @@ function updateRevenueFilter() {
   // Label
   var labels = { monthly: 'This Month', quarterly: 'This Quarter', yearly: 'This Year', all: 'All Time', custom: 'Selected Date' };
   if (labelEl) labelEl.textContent = (labels[filter] || '') + ' · ' + filtered.length + ' apps';
+}
+
+async function adminUploadDoc(docId, fileInput) {
+  if (!fileInput.files || !fileInput.files[0]) { showToast('Please select a file first!', 'error'); return; }
+  var file = fileInput.files[0];
+  showToast('Uploading document...', 'success');
+  try {
+    var formData = new FormData();
+    formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
+    formData.append('UPLOADCARE_STORE', '1');
+    formData.append('file', file);
+    var res = await fetch('https://upload.uploadcare.com/base/', { method: 'POST', body: formData });
+    var data = await res.json();
+    if (!data.file) { showToast('Upload failed!', 'error'); return; }
+    var fileUrl = 'https://2rz0648lib.ucarecd.net/' + data.file + '/' + encodeURIComponent(file.name);
+    var appDoc = await db.collection('applications').doc(docId).get();
+    var existing = appDoc.data().adminDocs || [];
+    existing.push({ name: file.name, url: fileUrl });
+    await db.collection('applications').doc(docId).update({ adminDocs: existing });
+    showToast('Document uploaded! Client can now download it. ✅', 'success');
+    fileInput.value = '';
+  } catch(e) {
+    showToast('Upload failed: ' + e.message, 'error');
+  }
 }
 
 function downloadCertificate(app) {
