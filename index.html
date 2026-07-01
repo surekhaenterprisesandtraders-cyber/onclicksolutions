@@ -663,14 +663,14 @@ if ('serviceWorker' in navigator) {
       <div id="revenueLabel" style="font-size:10px;color:var(--gray);margin-top:4px;"></div>
     </div>
   </div>
-  <div style="padding:0 24px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-    <select id="filterStatus" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
+  <div style="padding:0 24px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;overflow-x:hidden;">
+    <select id="filterStatus" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;flex-shrink:0;">
       <option value="">All Status</option>
       <option value="Pending">Pending</option>
       <option value="In Progress">In Progress</option>
       <option value="Completed">Completed</option>
     </select>
-    <select id="filterService" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
+    <select id="filterService" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;flex-shrink:0;">
       <option value="">All Services</option>
       <option>Aadhaar Card</option>
       <option>PAN Card</option>
@@ -684,10 +684,10 @@ if ('serviceWorker' in navigator) {
       <option>Caste Certificate</option>
       <option>Domicile Certificate</option>
     </select>
-    <input type="date" id="filterDate" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;">
-    <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:200px;">
-    <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Clear</button>
-    <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">📥 Export CSV</button>
+    <input type="date" id="filterDate" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;flex-shrink:0;">
+    <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:150px;max-width:100%;">
+    <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);flex-shrink:0;">✕ Clear</button>
+    <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
   </div>
   <div class="applications-list" id="adminList"></div>
 </div>
