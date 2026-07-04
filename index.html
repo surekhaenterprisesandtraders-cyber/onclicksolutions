@@ -454,7 +454,7 @@ if ('serviceWorker' in navigator) {
     <div style="margin-bottom:18px;">
       <div style="position:relative;max-width:480px;margin:0 auto;">
         <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;">🔍</span>
-        <input type="text" id="serviceSearch" placeholder="Search services... (e.g. Aadhaar, GST, Passport)" oninput="searchServices(this.value)"
+        <input type="text" id="serviceSearch" placeholder="Search services... (e.g. Aadhaar, GST, Passport)" oninput="searchServices(this.value)" onkeydown="handleSearchKey(event)"
           style="width:100%;padding:12px 16px 12px 44px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;box-sizing:border-box;transition:border .2s;"
           onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
       </div>
@@ -2028,38 +2028,135 @@ function switchTab(tab) {
   });
 }
 
+function handleSearchKey(e) {
+  var resultsDiv = document.getElementById('searchResults');
+  var items = resultsDiv.querySelectorAll('.search-item');
+  if (!items.length) return;
+  var current = resultsDiv.querySelector('.search-item.active');
+  var idx = -1;
+  items.forEach(function(el, i){ if (el === current) idx = i; });
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (current) current.classList.remove('active');
+    var next = items[idx + 1] || items[0];
+    next.classList.add('active');
+    next.style.background = 'var(--primary-light)';
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (current) current.classList.remove('active');
+    var prev = items[idx - 1] || items[items.length - 1];
+    prev.classList.add('active');
+    prev.style.background = 'var(--primary-light)';
+  } else if (e.key === 'Enter') {
+    if (current) current.click();
+  } else if (e.key === 'Escape') {
+    resultsDiv.style.display = 'none';
+    document.getElementById('serviceSearch').value = '';
+  }
+}
+
 function searchServices(query) {
   var resultsDiv = document.getElementById('searchResults');
   query = query.trim().toLowerCase();
   if (!query) { resultsDiv.style.display = 'none'; return; }
+
   var matches = [];
-  Object.values(SERVICES).forEach(function(data) {
+  Object.entries(SERVICES).forEach(function(entry) {
+    var category = entry[0];
+    var data = entry[1];
     data.services.forEach(function(s) {
-      if (s.name.toLowerCase().includes(query)) {
-        matches.push(s.name);
+      var nameMatch = s.name.toLowerCase().includes(query);
+      var subMatch = s.subs && s.subs.some(function(sub){ return sub.toLowerCase().includes(query); });
+      if (nameMatch || subMatch) {
+        matches.push({ name: s.name, category: category, popular: s.popular, subMatch: subMatch && !nameMatch });
       }
     });
   });
+
+  // Sort — popular first, then name match, then sub match
+  matches.sort(function(a, b) {
+    if (a.popular && !b.popular) return -1;
+    if (!a.popular && b.popular) return 1;
+    if (!a.subMatch && b.subMatch) return -1;
+    if (a.subMatch && !b.subMatch) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   resultsDiv.innerHTML = '';
   if (matches.length === 0) {
     resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = '<div style="padding:14px 16px;color:var(--gray);font-size:14px;">No services found for "' + query + '"</div>';
+    var noResult = document.createElement('div');
+    noResult.style.cssText = 'padding:14px 16px;color:var(--gray);font-size:13px;display:flex;align-items:center;gap:8px;';
+    noResult.innerHTML = '🔍 No services found for <strong style="color:var(--dark);margin-left:4px;">"' + query + '"</strong>';
+    resultsDiv.appendChild(noResult);
     return;
   }
+
   resultsDiv.style.display = 'block';
-  matches.forEach(function(name) {
+
+  // Highlight matching text
+  function highlight(text, q) {
+    var idx = text.toLowerCase().indexOf(q);
+    if (idx === -1) return text;
+    return text.slice(0, idx) + '<mark style="background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:0 2px;">' + text.slice(idx, idx + q.length) + '</mark>' + text.slice(idx + q.length);
+  }
+
+  // Category icons
+  var catIcons = {
+    'Identity & Personal': '🪪',
+    'Driving & Vehicle (RTO)': '🚗',
+    'Income & Tax': '🧾',
+    'Business & Legal': '🏢',
+    'Certificates & Affidavits': '📜',
+    'Government Schemes': '🏛️',
+    'Digital Services': '💻'
+  };
+
+  matches.slice(0, 8).forEach(function(match, i) {
     var item = document.createElement('div');
-    item.style.cssText = 'padding:12px 16px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);transition:background .15s;';
-    item.innerHTML = '📋 ' + name;
+    item.className = 'search-item';
+    item.style.cssText = 'padding:10px 16px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .15s;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    var icon = document.createElement('span');
+    icon.style.cssText = 'font-size:18px;';
+    icon.textContent = catIcons[match.category] || '📋';
+    var textDiv = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-weight:600;color:var(--dark);';
+    nameEl.innerHTML = highlight(match.name, query);
+    var catEl = document.createElement('div');
+    catEl.style.cssText = 'font-size:11px;color:var(--gray);margin-top:1px;';
+    catEl.textContent = match.category;
+    textDiv.appendChild(nameEl);
+    textDiv.appendChild(catEl);
+    left.appendChild(icon);
+    left.appendChild(textDiv);
+    item.appendChild(left);
+    if (match.popular) {
+      var badge = document.createElement('span');
+      badge.style.cssText = 'background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;';
+      badge.textContent = 'HOT';
+      item.appendChild(badge);
+    }
     item.addEventListener('mouseenter', function(){ item.style.background = 'var(--primary-light)'; });
     item.addEventListener('mouseleave', function(){ item.style.background = ''; });
     item.addEventListener('click', function(){
       resultsDiv.style.display = 'none';
       document.getElementById('serviceSearch').value = '';
-      openApply(name);
+      openApply(match.name);
     });
     resultsDiv.appendChild(item);
   });
+
+  // Show count if more results
+  if (matches.length > 8) {
+    var more = document.createElement('div');
+    more.style.cssText = 'padding:8px 16px;color:var(--gray);font-size:11px;text-align:center;background:#f9fafb;';
+    more.textContent = '+' + (matches.length - 8) + ' more results — keep typing to narrow down';
+    resultsDiv.appendChild(more);
+  }
 }
 
 // Close search results when clicking outside
