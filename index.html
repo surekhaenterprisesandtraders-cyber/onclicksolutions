@@ -636,6 +636,11 @@ if ('serviceWorker' in navigator) {
   </div>
   <div class="dash-grid" id="dashGrid"></div>
   <div class="applications-list" id="appList"></div>
+  <!-- INVOICES SECTION -->
+  <div id="invoicesSection" style="display:none;max-width:900px;margin:0 auto;padding:0 20px 32px;">
+    <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);margin-bottom:16px;">🧾 My Invoices</div>
+    <div id="invoiceList"></div>
+  </div>
 </div>
 
 <!-- ADMIN -->
@@ -696,7 +701,9 @@ if ('serviceWorker' in navigator) {
     <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:150px;max-width:100%;">
     <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);flex-shrink:0;">✕ Clear</button>
     <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
+    <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
   </div>
+  <div id="invoiceSelectionInfo" style="display:none;padding:8px 0;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
 </div>
 
@@ -1431,6 +1438,9 @@ function renderDashboard() {
   dashGrid.innerHTML = '<div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div>';
   appList.innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>';
 
+  // Load invoices for this user
+  loadUserInvoices();
+
   db.collection('applications').where('userId','==', currentUser.id)
     .onSnapshot(function(snap) {
     var myApps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
@@ -1566,7 +1576,24 @@ function renderAdminList(apps) {
     apps.forEach(function(a) {
       var div = document.createElement('div');
       div.className = 'app-item';
-      div.style.cssText = 'flex-direction:column;align-items:stretch;gap:12px;';
+      div.style.cssText = 'flex-direction:column;align-items:stretch;gap:12px;position:relative;';
+
+      // Checkbox for invoice selection
+      var chkRow = document.createElement('div');
+      chkRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:2px;';
+      var chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.id = 'inv-chk-' + a.docId;
+      chk.dataset.docid = a.docId;
+      chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:#7c3aed;';
+      chk.addEventListener('change', updateInvoiceSelectionCount);
+      var chkLabel = document.createElement('label');
+      chkLabel.htmlFor = 'inv-chk-' + a.docId;
+      chkLabel.style.cssText = 'font-size:12px;color:#7c3aed;font-weight:600;cursor:pointer;';
+      chkLabel.textContent = 'Select for Invoice';
+      chkRow.appendChild(chk);
+      chkRow.appendChild(chkLabel);
+      div.appendChild(chkRow);
 
       var fileLinksHTML = '';
       if (a.fileURLs && a.fileURLs.length > 0) {
@@ -2231,6 +2258,261 @@ function exportToCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('CSV exported! ✅', 'success');
+}
+
+// ===== INVOICE SYSTEM =====
+function loadUserInvoices() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  var section = document.getElementById('invoicesSection');
+  var invoiceList = document.getElementById('invoiceList');
+  if (!section || !invoiceList) return;
+
+  db.collection('invoices').where('userId', '==', currentUser.id).orderBy('generatedAt', 'desc').get()
+    .then(function(snap) {
+      if (snap.empty) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      invoiceList.innerHTML = '';
+      snap.docs.forEach(function(d) {
+        var inv = Object.assign({}, d.data(), { id: d.id });
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border:1.5px solid #e0d7ff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(124,58,237,0.07);';
+
+        var header = document.createElement('div');
+        header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;';
+        var leftInfo = document.createElement('div');
+        leftInfo.innerHTML =
+          '<div style="font-size:15px;font-weight:700;color:#7c3aed;">🧾 ' + (inv.invoiceNo || '') + '</div>' +
+          '<div style="font-size:12px;color:var(--gray);margin-top:2px;">Generated: ' + (inv.generatedDate || '') + '</div>';
+        var amtBadge = document.createElement('div');
+        amtBadge.style.cssText = 'background:#f3f0ff;color:#7c3aed;font-size:16px;font-weight:800;padding:6px 16px;border-radius:10px;';
+        amtBadge.textContent = 'Rs. ' + (inv.totalAmount > 0 ? Number(inv.totalAmount).toFixed(2) : '0.00');
+        header.appendChild(leftInfo);
+        header.appendChild(amtBadge);
+        card.appendChild(header);
+
+        // Services list
+        if (inv.applications && inv.applications.length > 0) {
+          var svcDiv = document.createElement('div');
+          svcDiv.style.cssText = 'margin-bottom:14px;';
+          inv.applications.forEach(function(item) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #f1f5f9;';
+            var svcName = document.createElement('div');
+            svcName.style.cssText = 'color:var(--dark);';
+            svcName.textContent = item.service + (item.subService ? ' — ' + item.subService : '') + ' (#' + item.refId + ')';
+            var amt = document.createElement('div');
+            amt.style.cssText = 'color:#059669;font-weight:600;white-space:nowrap;';
+            amt.textContent = parseFloat(item.quote) > 0 ? 'Rs. ' + Number(item.quote).toFixed(2) : '-';
+            row.appendChild(svcName);
+            row.appendChild(amt);
+            svcDiv.appendChild(row);
+          });
+          card.appendChild(svcDiv);
+        }
+
+        // Download button
+        var dlBtn = document.createElement('button');
+        dlBtn.style.cssText = 'background:#7c3aed;color:white;border:none;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;width:100%;';
+        dlBtn.innerHTML = '⬇️ Download Invoice PDF';
+        dlBtn.addEventListener('click', (function(invoice){ return function(){ downloadInvoicePDF(invoice); }; })(inv));
+        card.appendChild(dlBtn);
+
+        invoiceList.appendChild(card);
+      });
+    })
+    .catch(function(e) {
+      console.error('Invoice load error:', e);
+    });
+}
+
+function updateInvoiceSelectionCount() {
+  var checked = document.querySelectorAll('input[id^="inv-chk-"]:checked');
+  var infoDiv = document.getElementById('invoiceSelectionInfo');
+  var countEl = document.getElementById('invoiceSelectedCount');
+  if (checked.length > 0) {
+    infoDiv.style.display = 'block';
+    countEl.textContent = checked.length;
+  } else {
+    infoDiv.style.display = 'none';
+  }
+}
+
+async function generateInvoiceForSelected() {
+  var checked = document.querySelectorAll('input[id^="inv-chk-"]:checked');
+  if (checked.length === 0) {
+    showToast('Pehle kuch applications select karo!', 'error');
+    return;
+  }
+
+  // Group selected docIds
+  var selectedDocIds = Array.from(checked).map(function(c) { return c.dataset.docid; });
+
+  // Get app data for selected
+  var selectedApps = _allAdminApps.filter(function(a) { return selectedDocIds.includes(a.docId); });
+
+  // Group by userId — ek user ke liye ek invoice
+  var byUser = {};
+  selectedApps.forEach(function(a) {
+    var uid = a.userId || ('guest_' + a.phone);
+    if (!byUser[uid]) byUser[uid] = [];
+    byUser[uid].push(a);
+  });
+
+  var invoiceCount = 0;
+  for (var uid in byUser) {
+    var userApps = byUser[uid];
+    var firstApp = userApps[0];
+    var invoiceNo = 'INV-' + Date.now().toString().slice(-6) + '-' + invoiceCount;
+    var total = userApps.reduce(function(sum, a) { return sum + (parseFloat(a.quote) || 0); }, 0);
+
+    var invoiceData = {
+      invoiceNo: invoiceNo,
+      userId: firstApp.userId || '',
+      clientName: firstApp.name || '',
+      clientPhone: firstApp.phone || '',
+      clientEmail: firstApp.email || '',
+      applications: userApps.map(function(a) {
+        return {
+          docId: a.docId,
+          refId: a.refId || '',
+          service: a.service || '',
+          subService: a.subService || '',
+          quote: a.quote || 0,
+          date: a.date || ''
+        };
+      }),
+      totalAmount: total,
+      status: 'unpaid',
+      generatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      generatedDate: new Date().toLocaleDateString('en-IN')
+    };
+
+    try {
+      await db.collection('invoices').add(invoiceData);
+      invoiceCount++;
+    } catch(e) {
+      console.error('Invoice save failed:', e);
+      showToast('Invoice save karne mein error: ' + e.message, 'error');
+    }
+  }
+
+  // Uncheck all
+  document.querySelectorAll('input[id^="inv-chk-"]:checked').forEach(function(c) { c.checked = false; });
+  updateInvoiceSelectionCount();
+
+  showToast(invoiceCount + ' invoice(s) generate ho gaya! Client dashboard pe dikhega. ✅', 'success');
+}
+
+async function downloadInvoicePDF(invoice) {
+  try {
+    var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPDF) { showToast('PDF library load nahi hua!', 'error'); return; }
+
+    var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var margin = 18;
+    var y = 0;
+
+    // Header background
+    doc.setFillColor(26, 86, 219);
+    doc.roundedRect(margin, 10, pageW - margin*2, 32, 4, 4, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(17); doc.setFont('helvetica', 'bold');
+    doc.text('On Click Solutions', pageW/2, 22, { align: 'center' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('A Brand of Surekha Enterprises | Mumbai', pageW/2, 29, { align: 'center' });
+    doc.text('WhatsApp: +91 97271 38236  |  admin@onclicksolutions.in', pageW/2, 35, { align: 'center' });
+
+    y = 50;
+    doc.setTextColor(30, 30, 60);
+    doc.setFontSize(15); doc.setFont('helvetica', 'bold');
+    doc.text('TAX INVOICE', pageW/2, y, { align: 'center' });
+    y += 8;
+
+    // Invoice meta
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 120);
+    doc.text('Invoice No: ' + (invoice.invoiceNo || ''), margin, y);
+    doc.text('Date: ' + (invoice.generatedDate || ''), pageW - margin, y, { align: 'right' });
+    y += 8;
+
+    // Client details box
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(margin, y, pageW - margin*2, 22, 3, 3, 'F');
+    doc.setTextColor(30, 30, 60);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Bill To:', margin + 4, y + 7);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(invoice.clientName || '', margin + 4, y + 13);
+    doc.text('Phone: ' + (invoice.clientPhone || '') + (invoice.clientEmail ? '  |  Email: ' + invoice.clientEmail : ''), margin + 4, y + 19);
+    y += 28;
+
+    // Table header
+    doc.setFillColor(26, 86, 219);
+    doc.rect(margin, y, pageW - margin*2, 9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+    doc.text('#', margin + 3, y + 6);
+    doc.text('Service', margin + 12, y + 6);
+    doc.text('Ref ID', margin + 100, y + 6);
+    doc.text('Amount (Rs.)', pageW - margin - 3, y + 6, { align: 'right' });
+    y += 9;
+
+    // Table rows
+    var apps = invoice.applications || [];
+    apps.forEach(function(item, i) {
+      doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 251 : 255);
+      doc.rect(margin, y, pageW - margin*2, 9, 'F');
+      doc.setTextColor(17, 24, 39);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+      doc.text(String(i + 1), margin + 3, y + 6);
+      var svcText = (item.service || '') + (item.subService ? ' - ' + item.subService : '');
+      if (svcText.length > 45) svcText = svcText.slice(0, 43) + '..';
+      doc.text(svcText, margin + 12, y + 6);
+      doc.text(item.refId || '', margin + 100, y + 6);
+      var amt = parseFloat(item.quote) || 0;
+      doc.text(amt > 0 ? 'Rs. ' + amt.toFixed(2) : '-', pageW - margin - 3, y + 6, { align: 'right' });
+      y += 9;
+    });
+
+    // Border around table
+    doc.setDrawColor(229, 231, 235);
+    doc.rect(margin, y - apps.length * 9 - 9, pageW - margin*2, apps.length * 9 + 9);
+
+    y += 4;
+
+    // Total row
+    doc.setFillColor(239, 246, 255);
+    doc.roundedRect(pageW/2, y, pageW/2 - margin, 12, 2, 2, 'F');
+    doc.setTextColor(26, 86, 219);
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.text('Total: Rs. ' + (invoice.totalAmount || 0).toFixed(2), pageW - margin - 4, y + 8, { align: 'right' });
+    y += 20;
+
+    // UPI Payment info
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(margin, y, pageW - margin*2, 18, 3, 3, 'F');
+    doc.setTextColor(5, 150, 105);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Payment Details', margin + 4, y + 7);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text('UPI ID: 7718807756@ptyes  |  GPay / PhonePe / Paytm accepted', margin + 4, y + 14);
+    y += 24;
+
+    // Footer note
+    doc.setTextColor(156, 163, 175);
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.text('This is a computer generated invoice by On Click Solutions, a brand of Surekha Enterprises, Mumbai.', pageW/2, y, { align: 'center' });
+
+    doc.save('Invoice-' + (invoice.invoiceNo || 'OCS') + '.pdf');
+    showToast('Invoice PDF downloaded! 🧾', 'success');
+  } catch(e) {
+    console.error('Invoice PDF error:', e);
+    showToast('Invoice PDF generate karne mein error!', 'error');
+  }
 }
 
 function updateRevenueFilter() {
