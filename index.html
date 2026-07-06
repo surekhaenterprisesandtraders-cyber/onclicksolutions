@@ -702,9 +702,19 @@ if ('serviceWorker' in navigator) {
     <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);flex-shrink:0;">✕ Clear</button>
     <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
     <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
+    <button onclick="showAdminInvoices()" style="padding:8px 14px;background:#1a56db;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📋 View All Invoices</button>
   </div>
-  <div id="invoiceSelectionInfo" style="display:none;padding:8px 0;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
+  <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
+
+  <!-- ADMIN INVOICES PANEL -->
+  <div id="adminInvoicesPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">🧾 All Generated Invoices</div>
+      <button onclick="document.getElementById('adminInvoicesPanel').style.display='none';document.getElementById('adminList').style.display='block';" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+    </div>
+    <div id="adminInvoiceList"></div>
+  </div>
 </div>
 
 <!-- AUTH MODAL -->
@@ -2326,6 +2336,93 @@ function loadUserInvoices() {
     .catch(function(e) {
       console.error('Invoice load error:', e);
     });
+}
+
+function showAdminInvoices() {
+  var panel = document.getElementById('adminInvoicesPanel');
+  var list = document.getElementById('adminInvoiceList');
+  var adminList = document.getElementById('adminList');
+
+  panel.style.display = 'block';
+  adminList.style.display = 'none';
+  list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;">Loading invoices...</div>';
+
+  db.collection('invoices').orderBy('generatedAt', 'desc').get()
+    .then(function(snap) {
+      if (snap.empty) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🧾</div><div class="empty-state-title">Koi invoice nahi hai</div><div class="empty-state-sub">Pehle applications select karke invoice generate karo.</div></div>';
+        return;
+      }
+      list.innerHTML = '';
+      snap.docs.forEach(function(d) {
+        var inv = Object.assign({}, d.data(), { id: d.id });
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border:1.5px solid #e0d7ff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(124,58,237,0.07);';
+
+        var header = document.createElement('div');
+        header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;';
+
+        var leftInfo = document.createElement('div');
+        leftInfo.innerHTML =
+          '<div style="font-size:15px;font-weight:700;color:#7c3aed;">🧾 ' + (inv.invoiceNo || '') + '</div>' +
+          '<div style="font-size:12px;color:var(--gray);margin-top:2px;">Client: <strong>' + (inv.clientName || '') + '</strong> &middot; ' + (inv.clientPhone || '') + '</div>' +
+          '<div style="font-size:12px;color:var(--gray);margin-top:1px;">Generated: ' + (inv.generatedDate || '') + '</div>';
+
+        var rightDiv = document.createElement('div');
+        rightDiv.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:8px;';
+
+        var amtBadge = document.createElement('div');
+        amtBadge.style.cssText = 'background:#f3f0ff;color:#7c3aed;font-size:16px;font-weight:800;padding:6px 16px;border-radius:10px;';
+        amtBadge.textContent = 'Rs. ' + (inv.totalAmount > 0 ? Number(inv.totalAmount).toFixed(2) : '0.00');
+
+        var delBtn = document.createElement('button');
+        delBtn.style.cssText = 'background:#fff;color:#dc2626;border:1.5px solid #dc2626;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+        delBtn.innerHTML = '🗑️ Delete Invoice';
+        delBtn.addEventListener('click', (function(invId, invNo){ return function(){ deleteInvoice(invId, invNo); }; })(inv.id, inv.invoiceNo));
+
+        rightDiv.appendChild(amtBadge);
+        rightDiv.appendChild(delBtn);
+        header.appendChild(leftInfo);
+        header.appendChild(rightDiv);
+        card.appendChild(header);
+
+        // Services list
+        if (inv.applications && inv.applications.length > 0) {
+          var svcDiv = document.createElement('div');
+          svcDiv.style.cssText = 'margin-bottom:8px;';
+          inv.applications.forEach(function(item) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f1f5f9;';
+            var svcName = document.createElement('span');
+            svcName.style.cssText = 'color:var(--dark);';
+            svcName.textContent = item.service + (item.subService ? ' — ' + item.subService : '') + ' (#' + item.refId + ')';
+            var amt = document.createElement('span');
+            amt.style.cssText = 'color:#059669;font-weight:600;';
+            amt.textContent = parseFloat(item.quote) > 0 ? 'Rs. ' + Number(item.quote).toFixed(2) : '-';
+            row.appendChild(svcName);
+            row.appendChild(amt);
+            svcDiv.appendChild(row);
+          });
+          card.appendChild(svcDiv);
+        }
+
+        list.appendChild(card);
+      });
+    })
+    .catch(function(e) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;">Error loading invoices: ' + e.message + '</div>';
+    });
+}
+
+async function deleteInvoice(invId, invNo) {
+  if (!confirm('Invoice ' + invNo + ' delete karna chahte ho? Ye action undo nahi hoga!')) return;
+  try {
+    await db.collection('invoices').doc(invId).delete();
+    showToast('Invoice deleted! ✅', 'success');
+    showAdminInvoices(); // Refresh list
+  } catch(e) {
+    showToast('Delete failed: ' + e.message, 'error');
+  }
 }
 
 function updateInvoiceSelectionCount() {
