@@ -2382,6 +2382,12 @@ function showAdminInvoices() {
 
         rightDiv.appendChild(amtBadge);
         rightDiv.appendChild(delBtn);
+
+        var dlBtn2 = document.createElement('button');
+        dlBtn2.style.cssText = 'background:#7c3aed;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+        dlBtn2.innerHTML = '⬇️ Download PDF';
+        dlBtn2.addEventListener('click', (function(invoice){ return function(){ downloadInvoicePDF(invoice); }; })(inv));
+        rightDiv.appendChild(dlBtn2);
         header.appendChild(leftInfo);
         header.appendChild(rightDiv);
         card.appendChild(header);
