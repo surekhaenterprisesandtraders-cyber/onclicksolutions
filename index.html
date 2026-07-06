@@ -307,6 +307,7 @@ if ('serviceWorker' in navigator) {
   .app-id { font-size:11px; color:var(--gray); }
   .status-badge { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; }
   .status-pending { background:#fef3c7; color:#d97706; }
+  .status-rejected { background:#fee2e2; color:#dc2626; }
   .status-progress { background:#dbeafe; color:#1a56db; }
   .status-done { background:#d1fae5; color:#059669; }
   .admin-bar { background:var(--dark); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; }
@@ -1649,7 +1650,7 @@ function renderAdminList(apps) {
       var sel = document.createElement('select');
       sel.className = 'form-select';
       sel.style.cssText = 'width:140px;font-size:13px;padding:7px 10px;';
-      ['Pending','In Progress','Completed'].forEach(function(s) {
+      ['Pending','In Progress','Completed','Rejected'].forEach(function(s) {
         var opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         if (a.status === s) opt.selected = true;
@@ -3045,6 +3046,7 @@ function scrollToServices() {
 function statusClass(s) {
   if (s === 'Pending') return 'status-pending';
   if (s === 'In Progress') return 'status-progress';
+  if (s === 'Rejected') return 'status-rejected';
   return 'status-done';
 }
 
