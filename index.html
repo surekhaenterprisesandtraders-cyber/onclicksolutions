@@ -704,6 +704,7 @@ if ('serviceWorker' in navigator) {
     <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
     <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
     <button onclick="showAdminInvoices()" style="padding:8px 14px;background:#1a56db;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📋 View All Invoices</button>
+    <button onclick="showAdminUsers()" style="padding:8px 14px;background:#0891b2;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">👥 All Users</button>
   </div>
   <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
@@ -712,9 +713,21 @@ if ('serviceWorker' in navigator) {
   <div id="adminInvoicesPanel" style="display:none;padding:0 24px 32px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">🧾 All Generated Invoices</div>
-      <button onclick="document.getElementById('adminInvoicesPanel').style.display='none';document.getElementById('adminList').style.display='block';" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+      <button onclick="closeAdminPanel('adminInvoicesPanel')" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
     </div>
     <div id="adminInvoiceList"></div>
+  </div>
+
+  <!-- ADMIN USERS PANEL -->
+  <div id="adminUsersPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">👥 All Registered Users</div>
+      <button onclick="closeAdminPanel('adminUsersPanel')" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+    </div>
+    <div id="adminUserSearch" style="margin-bottom:14px;">
+      <input id="userSearchInput" type="text" placeholder="🔍 Search by name, email or phone..." oninput="filterAdminUsers()" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;">
+    </div>
+    <div id="adminUserList"></div>
   </div>
 </div>
 
@@ -2337,6 +2350,146 @@ function loadUserInvoices() {
     .catch(function(e) {
       console.error('Invoice load error:', e);
     });
+}
+
+function closeAdminPanel(panelId) {
+  document.getElementById(panelId).style.display = 'none';
+  document.getElementById('adminList').style.display = 'block';
+}
+
+var _allAdminUsers = [];
+
+function showAdminUsers() {
+  var panel = document.getElementById('adminUsersPanel');
+  var invoicesPanel = document.getElementById('adminInvoicesPanel');
+  var adminList = document.getElementById('adminList');
+  var list = document.getElementById('adminUserList');
+
+  invoicesPanel.style.display = 'none';
+  adminList.style.display = 'none';
+  panel.style.display = 'block';
+  list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;">Loading users...</div>';
+  document.getElementById('userSearchInput').value = '';
+
+  db.collection('users').orderBy('createdAt', 'desc').get()
+    .then(function(snap) {
+      if (snap.empty) {
+        _allAdminUsers = [];
+        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Koi user nahi hai</div><div class="empty-state-sub">Abhi tak koi sign up nahi kiya.</div></div>';
+        return;
+      }
+      _allAdminUsers = snap.docs.map(function(d) { return Object.assign({}, d.data(), { id: d.id }); });
+      renderAdminUserList(_allAdminUsers);
+    })
+    .catch(function(e) {
+      // Fallback: get users from applications collection
+      db.collection('applications').get().then(function(snap2) {
+        var usersMap = {};
+        snap2.docs.forEach(function(d) {
+          var a = d.data();
+          if (a.userId && !usersMap[a.userId]) {
+            usersMap[a.userId] = {
+              id: a.userId,
+              name: a.name || '',
+              email: a.email || '',
+              phone: a.phone || '',
+              createdAt: a.createdAt || null
+            };
+          }
+        });
+        _allAdminUsers = Object.values(usersMap);
+        if (_allAdminUsers.length === 0) {
+          list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Koi user nahi mila</div></div>';
+          return;
+        }
+        renderAdminUserList(_allAdminUsers);
+      }).catch(function(e2) {
+        list.innerHTML = '<div style="color:#dc2626;font-size:13px;">Error: ' + e2.message + '</div>';
+      });
+    });
+}
+
+function filterAdminUsers() {
+  var q = document.getElementById('userSearchInput').value.toLowerCase().trim();
+  if (!q) { renderAdminUserList(_allAdminUsers); return; }
+  var filtered = _allAdminUsers.filter(function(u) {
+    return (u.name || '').toLowerCase().includes(q) ||
+           (u.email || '').toLowerCase().includes(q) ||
+           (u.phone || '').toLowerCase().includes(q);
+  });
+  renderAdminUserList(filtered);
+}
+
+function renderAdminUserList(users) {
+  var list = document.getElementById('adminUserList');
+  if (users.length === 0) {
+    list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;text-align:center;">Koi user nahi mila.</div>';
+    return;
+  }
+
+  // Header count
+  list.innerHTML = '';
+  var countDiv = document.createElement('div');
+  countDiv.style.cssText = 'font-size:13px;color:var(--gray);margin-bottom:12px;';
+  countDiv.textContent = 'Total: ' + users.length + ' user(s)';
+  list.appendChild(countDiv);
+
+  users.forEach(function(u, i) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;';
+
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:14px;';
+
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:42px;height:42px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#1a56db;flex-shrink:0;';
+    avatar.textContent = (u.name || 'U').charAt(0).toUpperCase();
+
+    var info = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:14px;font-weight:700;color:var(--dark);';
+    nameEl.textContent = u.name || 'Unknown User';
+
+    var emailEl = document.createElement('div');
+    emailEl.style.cssText = 'font-size:12px;color:var(--gray);margin-top:2px;';
+    emailEl.innerHTML = '✉️ ' + (u.email || '—');
+
+    var phoneEl = document.createElement('div');
+    phoneEl.style.cssText = 'font-size:12px;color:var(--gray);margin-top:1px;';
+    phoneEl.innerHTML = '📱 ' + (u.phone || '—');
+
+    info.appendChild(nameEl);
+    info.appendChild(emailEl);
+    info.appendChild(phoneEl);
+    left.appendChild(avatar);
+    left.appendChild(info);
+
+    var right = document.createElement('div');
+    right.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:6px;';
+
+    // Joined date
+    if (u.createdAt) {
+      var dateDiv = document.createElement('div');
+      dateDiv.style.cssText = 'font-size:11px;color:var(--gray);';
+      var d = u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+      dateDiv.textContent = '📅 Joined: ' + d.toLocaleDateString('en-IN');
+      right.appendChild(dateDiv);
+    }
+
+    // WhatsApp quick contact
+    if (u.phone) {
+      var waBtn = document.createElement('a');
+      waBtn.href = 'https://wa.me/91' + u.phone.replace(/\D/g,'');
+      waBtn.target = '_blank';
+      waBtn.style.cssText = 'background:#25D366;color:white;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;';
+      waBtn.innerHTML = '💬 WhatsApp';
+      right.appendChild(waBtn);
+    }
+
+    card.appendChild(left);
+    card.appendChild(right);
+    list.appendChild(card);
+  });
 }
 
 function showAdminInvoices() {
