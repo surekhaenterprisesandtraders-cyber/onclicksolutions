@@ -1534,7 +1534,17 @@ function renderDashboard() {
       var rcptBtn = document.createElement('button');
       rcptBtn.style.cssText = 'background:#f3f4f6;color:#374151;border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;';
       rcptBtn.innerHTML = '📄 Receipt';
-      rcptBtn.addEventListener('click', (function(app){ return function(){ downloadReceiptFromApp(app); }; })(a));
+      rcptBtn.addEventListener('click', (function(docId){ return function(){
+        db.collection('applications').doc(docId).get().then(function(snap) {
+          if (snap.exists) {
+            downloadReceiptFromApp(Object.assign({}, snap.data(), { docId: snap.id }));
+          } else {
+            showToast('Application data nahi mila!', 'error');
+          }
+        }).catch(function(e) {
+          showToast('Error: ' + e.message, 'error');
+        });
+      }; })(a.docId));
       actionDiv.appendChild(rcptBtn);
       // Review button for completed applications
       if (a.status === 'Completed') {
@@ -1714,7 +1724,15 @@ function renderAdminList(apps) {
       adminRcptBtn.className = 'btn btn-outline';
       adminRcptBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#fff;color:#1a56db;border-color:#1a56db;';
       adminRcptBtn.innerHTML = '📄 Receipt';
-      adminRcptBtn.addEventListener('click', (function(app){ return function(){ downloadReceiptFromApp(app); }; })(a));
+      adminRcptBtn.addEventListener('click', (function(docId){ return function(){
+        db.collection('applications').doc(docId).get().then(function(snap) {
+          if (snap.exists) {
+            downloadReceiptFromApp(Object.assign({}, snap.data(), { docId: snap.id }));
+          } else {
+            showToast('Application data nahi mila!', 'error');
+          }
+        }).catch(function(e) { showToast('Error: ' + e.message, 'error'); });
+      }; })(a.docId));
 
       actDiv.appendChild(sel);
       actDiv.appendChild(amtInput);
