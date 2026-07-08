@@ -1511,11 +1511,24 @@ function renderDashboard() {
       badge.textContent = a.status;
       actionDiv.appendChild(badge);
       if (a.quote && a.paymentRequested) {
-        var payBtn = document.createElement('button');
-        payBtn.style.cssText = 'background:#10b981;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
-        payBtn.innerHTML = '💳 Pay ₹' + a.quote;
-        payBtn.addEventListener('click', (function(app){ return function(){ openPayment(app); }; })(a));
-        actionDiv.appendChild(payBtn);
+        if (a.paymentStatus === 'Paid') {
+          var paidBadge = document.createElement('div');
+          paidBadge.style.cssText = 'background:#dcfce7;color:#15803d;font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid #bbf7d0;';
+          paidBadge.innerHTML = '✅ Payment Received';
+          actionDiv.appendChild(paidBadge);
+        } else {
+          var payBtn = document.createElement('button');
+          payBtn.style.cssText = 'background:#10b981;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+          payBtn.innerHTML = '💳 Pay ₹' + a.quote;
+          payBtn.addEventListener('click', (function(app){ return function(){ openPayment(app); }; })(a));
+          actionDiv.appendChild(payBtn);
+          if (a.paymentStatus === 'Pending Verification') {
+            var pendVerify = document.createElement('div');
+            pendVerify.style.cssText = 'font-size:10px;color:#d97706;font-weight:600;margin-top:2px;';
+            pendVerify.innerHTML = '⏳ Payment Verification Pending';
+            actionDiv.appendChild(pendVerify);
+          }
+        }
       }
       // Receipt button for client
       var rcptBtn = document.createElement('button');
@@ -1710,6 +1723,22 @@ function renderAdminList(apps) {
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
 
+      // Mark Payment Received button
+      if (a.paymentRequested) {
+        var payMarkBtn = document.createElement('button');
+        payMarkBtn.className = 'btn btn-outline';
+        if (a.paymentStatus === 'Paid') {
+          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#dcfce7;color:#15803d;border-color:#86efac;cursor:default;';
+          payMarkBtn.innerHTML = '✅ Payment Received';
+          payMarkBtn.disabled = true;
+        } else {
+          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#fff;color:#15803d;border-color:#15803d;cursor:pointer;';
+          payMarkBtn.innerHTML = '💰 Mark Payment Received';
+          payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, app.service); }; })(a));
+        }
+        actDiv.appendChild(payMarkBtn);
+      }
+
       // Admin internal notes section
       var notesBox = document.createElement('div');
       notesBox.style.cssText = 'width:100%;margin-top:10px;padding:10px;background:#fafafa;border:1.5px solid var(--border);border-radius:10px;';
@@ -1817,6 +1846,20 @@ async function deleteApplication(docId, name, service) {
     await db.collection('applications').doc(docId).delete();
     showToast('Application deleted!', 'success');
   } catch(e) { showToast('Delete failed!', 'error'); }
+}
+
+async function markPaymentReceived(docId, clientName, service) {
+  if (!confirm('Confirm: ' + (clientName || 'Client') + ' ka payment received mark karna hai?')) return;
+  try {
+    await db.collection('applications').doc(docId).update({
+      paymentStatus: 'Paid',
+      paymentReceivedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Payment received mark ho gaya! ✅', 'success');
+    loadAdminApps(); // Refresh admin list
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
 }
 
 async function sendQuoteNew(docId, service, name, phone, refId, email) {
