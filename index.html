@@ -1887,7 +1887,7 @@ async function markPaymentReceived(docId, clientName, action) {
       });
       showToast('Payment received mark ho gaya! ✅', 'success');
     }
-    loadAdminApps();
+    renderAdmin();
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
   }
