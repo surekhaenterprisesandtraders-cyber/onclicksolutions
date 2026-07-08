@@ -1740,9 +1740,8 @@ function renderAdminList(apps) {
       actDiv.appendChild(qBtn);
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
-      div.appendChild(actDiv);
 
-      // Mark Payment Received button — separate row
+      // Mark Payment Received button — separate row inside actDiv
       if (a.quote) {
         var payRow = document.createElement('div');
         payRow.style.cssText = 'width:100%;margin-top:6px;';
@@ -1757,7 +1756,7 @@ function renderAdminList(apps) {
           payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, 'paid'); }; })(a));
         }
         payRow.appendChild(payMarkBtn);
-        div.appendChild(payRow);
+        actDiv.appendChild(payRow);
       }
 
       // Admin internal notes section
@@ -1830,6 +1829,7 @@ function renderAdminList(apps) {
         actDiv.appendChild(revBox);
       }
       div.appendChild(infoDiv);
+      div.appendChild(actDiv);
       list.appendChild(div);
     });
 }
