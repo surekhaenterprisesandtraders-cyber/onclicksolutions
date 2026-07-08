@@ -1742,17 +1742,17 @@ function renderAdminList(apps) {
       actDiv.appendChild(adminRcptBtn);
 
       // Mark Payment Received button
-      if (a.paymentRequested) {
+      if (a.quote) {
         var payMarkBtn = document.createElement('button');
         payMarkBtn.className = 'btn btn-outline';
         if (a.paymentStatus === 'Paid') {
-          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#dcfce7;color:#15803d;border-color:#86efac;cursor:default;';
-          payMarkBtn.innerHTML = '✅ Payment Received';
-          payMarkBtn.disabled = true;
+          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#dcfce7;color:#15803d;border-color:#86efac;cursor:pointer;';
+          payMarkBtn.innerHTML = '✅ Payment Received — Undo?';
+          payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, 'undo'); }; })(a));
         } else {
           payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#fff;color:#15803d;border-color:#15803d;cursor:pointer;';
           payMarkBtn.innerHTML = '💰 Mark Payment Received';
-          payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, app.service); }; })(a));
+          payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, 'paid'); }; })(a));
         }
         actDiv.appendChild(payMarkBtn);
       }
@@ -1866,15 +1866,26 @@ async function deleteApplication(docId, name, service) {
   } catch(e) { showToast('Delete failed!', 'error'); }
 }
 
-async function markPaymentReceived(docId, clientName, service) {
-  if (!confirm('Confirm: ' + (clientName || 'Client') + ' ka payment received mark karna hai?')) return;
+async function markPaymentReceived(docId, clientName, action) {
+  var confirmMsg = action === 'undo'
+    ? (clientName || 'Client') + ' ka payment received UNDO karna hai? Wapas unpaid ho jaayega.'
+    : (clientName || 'Client') + ' ka payment received mark karna hai?';
+  if (!confirm(confirmMsg)) return;
   try {
-    await db.collection('applications').doc(docId).update({
-      paymentStatus: 'Paid',
-      paymentReceivedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showToast('Payment received mark ho gaya! ✅', 'success');
-    loadAdminApps(); // Refresh admin list
+    if (action === 'undo') {
+      await db.collection('applications').doc(docId).update({
+        paymentStatus: 'Pending Verification',
+        paymentReceivedAt: firebase.firestore.FieldValue.delete()
+      });
+      showToast('Payment status wapas pending ho gaya!', 'success');
+    } else {
+      await db.collection('applications').doc(docId).update({
+        paymentStatus: 'Paid',
+        paymentReceivedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Payment received mark ho gaya! ✅', 'success');
+    }
+    loadAdminApps();
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
   }
