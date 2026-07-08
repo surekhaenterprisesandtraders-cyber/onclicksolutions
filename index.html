@@ -3157,6 +3157,7 @@ function downloadCertificate(app) {
 }
 
 function downloadReceiptFromApp(app) {
+  console.log('Receipt app data:', app.docId, 'paymentStatus:', app.paymentStatus, 'quote:', app.quote);
   try {
     var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     if (!jsPDF) {
