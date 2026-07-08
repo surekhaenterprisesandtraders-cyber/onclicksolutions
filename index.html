@@ -1740,21 +1740,24 @@ function renderAdminList(apps) {
       actDiv.appendChild(qBtn);
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
+      div.appendChild(actDiv);
 
-      // Mark Payment Received button
+      // Mark Payment Received button — separate row
       if (a.quote) {
+        var payRow = document.createElement('div');
+        payRow.style.cssText = 'width:100%;margin-top:6px;';
         var payMarkBtn = document.createElement('button');
-        payMarkBtn.className = 'btn btn-outline';
         if (a.paymentStatus === 'Paid') {
-          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#dcfce7;color:#15803d;border-color:#86efac;cursor:pointer;';
+          payMarkBtn.style.cssText = 'font-size:12px;padding:7px 18px;background:#dcfce7;color:#15803d;border:1.5px solid #86efac;border-radius:8px;cursor:pointer;font-weight:600;';
           payMarkBtn.innerHTML = '✅ Payment Received — Undo?';
           payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, 'undo'); }; })(a));
         } else {
-          payMarkBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#fff;color:#15803d;border-color:#15803d;cursor:pointer;';
+          payMarkBtn.style.cssText = 'font-size:12px;padding:7px 18px;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;cursor:pointer;font-weight:600;';
           payMarkBtn.innerHTML = '💰 Mark Payment Received';
           payMarkBtn.addEventListener('click', (function(app){ return function(){ markPaymentReceived(app.docId, app.name, 'paid'); }; })(a));
         }
-        actDiv.appendChild(payMarkBtn);
+        payRow.appendChild(payMarkBtn);
+        div.appendChild(payRow);
       }
 
       // Admin internal notes section
@@ -1827,7 +1830,6 @@ function renderAdminList(apps) {
         actDiv.appendChild(revBox);
       }
       div.appendChild(infoDiv);
-      div.appendChild(actDiv);
       list.appendChild(div);
     });
 }
