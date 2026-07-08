@@ -2792,20 +2792,95 @@ async function downloadInvoicePDF(invoice) {
     doc.text('Total: Rs. ' + (invoice.totalAmount || 0).toFixed(2), pageW - margin - 4, y + 8, { align: 'right' });
     y += 20;
 
-    // UPI Payment info
-    doc.setFillColor(240, 253, 244);
-    doc.roundedRect(margin, y, pageW - margin*2, 18, 3, 3, 'F');
+    // UPI QR Code - fetch and embed
+    var qrBase64 = null;
+    try {
+      var upiString = 'upi://pay?pa=7718807756@ptyes&pn=On+Click+Solutions&am=' + (invoice.totalAmount || '') + '&cu=INR';
+      var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(upiString);
+      var qrResp = await fetch(qrApiUrl);
+      var qrBlob = await qrResp.blob();
+      qrBase64 = await new Promise(function(res) {
+        var reader = new FileReader();
+        reader.onloadend = function() { res(reader.result); };
+        reader.readAsDataURL(qrBlob);
+      });
+    } catch(e) { qrBase64 = null; }
+
+    // Payment Section - corporate styled box
+    var payBoxH = 52;
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, y, pageW - margin*2, payBoxH, 4, 4, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, y, pageW - margin*2, payBoxH, 4, 4, 'S');
+
+    // Blue left accent bar
+    doc.setFillColor(26, 86, 219);
+    doc.roundedRect(margin, y, 4, payBoxH, 2, 2, 'F');
+
+    // Section title
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 24, 39);
+    doc.text('Payment Details', margin + 10, y + 9);
+
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin + 10, y + 12, pageW - margin - 4, y + 12);
+
+    // QR code (right side)
+    var qrSize = 38;
+    var qrX = pageW - margin - qrSize - 4;
+    var qrY = y + 8;
+    if (qrBase64) {
+      // QR white background box
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 2, 2, 'F');
+      doc.setDrawColor(200, 210, 230);
+      doc.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 2, 2, 'S');
+      doc.addImage(qrBase64, 'PNG', qrX, qrY, qrSize, qrSize);
+      // "Scan to Pay" label
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(26, 86, 219);
+      doc.text('Scan to Pay', qrX + qrSize/2, qrY + qrSize + 5, { align: 'center' });
+    }
+
+    // Left side payment info
+    var infoX = margin + 10;
+    var infoY = y + 19;
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 86, 219);
+    doc.text('UPI ID:', infoX, infoY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(17, 24, 39);
+    doc.text('7718807756@ptyes', infoX + 18, infoY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 86, 219);
+    doc.text('Accepted:', infoX, infoY + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(17, 24, 39);
+    doc.text('GPay  |  PhonePe  |  Paytm  |  Any UPI App', infoX + 22, infoY + 8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(26, 86, 219);
+    doc.text('Amount:', infoX, infoY + 16);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(5, 150, 105);
-    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-    doc.text('Payment Details', margin + 4, y + 7);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-    doc.text('UPI ID: 7718807756@ptyes  |  GPay / PhonePe / Paytm accepted', margin + 4, y + 14);
-    y += 24;
+    doc.text('Rs. ' + (invoice.totalAmount || 0).toFixed(2), infoX + 20, infoY + 16);
+
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('Please share payment screenshot on WhatsApp after payment.', infoX, infoY + 24);
+
+    y += payBoxH + 10;
 
     // Footer note
+    doc.setDrawColor(229, 231, 235);
+    doc.line(margin, y - 4, pageW - margin, y - 4);
     doc.setTextColor(156, 163, 175);
-    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
     doc.text('© 2026 On Click Solutions · A Surekha Enterprises Venture | Mumbai', pageW/2, y, { align: 'center' });
+    doc.text('This is a computer generated invoice. For queries: +91 97271 38236', pageW/2, y + 5, { align: 'center' });
 
     doc.save('Invoice-' + (invoice.invoiceNo || 'OCS') + '.pdf');
     showToast('Invoice PDF downloaded! 🧾', 'success');
