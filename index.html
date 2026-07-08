@@ -2673,6 +2673,10 @@ async function downloadInvoicePDF(invoice) {
     var margin = 18;
     var y = 0;
 
+    // Header - white background, logo left, brand name right of logo
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageW, 48, 'F');
+
     // Load logo as base64
     var logoBase64 = null;
     try {
@@ -2685,28 +2689,44 @@ async function downloadInvoicePDF(invoice) {
       });
     } catch(e) { logoBase64 = null; }
 
-    // Header background
-    doc.setFillColor(26, 86, 219);
-    doc.roundedRect(margin, 10, pageW - margin*2, 36, 4, 4, 'F');
-
-    // Logo image (left side inside header)
+    // Logo image (left side)
     if (logoBase64) {
       doc.addImage(logoBase64, 'PNG', margin + 4, 13, 28, 28);
     }
 
     // Brand name - website style (right of logo)
-    var textX = logoBase64 ? margin + 38 : pageW / 2;
-    var textAlign = logoBase64 ? 'left' : 'center';
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-    doc.text('On Click Solutions', textX, 24, { align: textAlign });
-    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 220, 255);
-    doc.text('A Surekha Enterprises Venture', textX, 31, { align: textAlign });
-    doc.setTextColor(180, 205, 255);
-    doc.text('WhatsApp: +91 97271 38236  |  admin@onclicksolutions.in', textX, 37, { align: textAlign });
+    var textX = logoBase64 ? margin + 38 : margin;
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+    // "On " — dark
+    doc.setTextColor(17, 24, 39);
+    doc.text('On ', textX, 25);
+    // "Click" — blue
+    var onWidth = doc.getTextWidth('On ');
+    doc.setTextColor(26, 86, 219);
+    doc.text('Click', textX + onWidth, 25);
+    // " Solutions" — dark
+    var clickWidth = doc.getTextWidth('Click');
+    doc.setTextColor(17, 24, 39);
+    doc.text(' Solutions', textX + onWidth + clickWidth, 25);
 
-    y = 56;
+    // Subtitle
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('Government & Business Services', textX, 32);
+
+    // Contact line (right side of header)
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('WhatsApp: +91 97271 38236  |  admin@onclicksolutions.in', pageW - margin, 38, { align: 'right' });
+    doc.setFontSize(8);
+    doc.text('A Surekha Enterprises Venture', pageW - margin, 33, { align: 'right' });
+
+    // Divider line
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 44, pageW - margin, 44);
+
+    y = 52;
     doc.setTextColor(30, 30, 60);
     doc.setFontSize(15); doc.setFont('helvetica', 'bold');
     doc.text('TAX INVOICE', pageW/2, y, { align: 'center' });
