@@ -2673,17 +2673,40 @@ async function downloadInvoicePDF(invoice) {
     var margin = 18;
     var y = 0;
 
+    // Load logo as base64
+    var logoBase64 = null;
+    try {
+      var imgResp = await fetch('https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png');
+      var imgBlob = await imgResp.blob();
+      logoBase64 = await new Promise(function(res) {
+        var reader = new FileReader();
+        reader.onloadend = function() { res(reader.result); };
+        reader.readAsDataURL(imgBlob);
+      });
+    } catch(e) { logoBase64 = null; }
+
     // Header background
     doc.setFillColor(26, 86, 219);
-    doc.roundedRect(margin, 10, pageW - margin*2, 32, 4, 4, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(17); doc.setFont('helvetica', 'bold');
-    doc.text('On Click Solutions', pageW/2, 22, { align: 'center' });
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('A Surekha Enterprises Venture | Mumbai', pageW/2, 29, { align: 'center' });
-    doc.text('WhatsApp: +91 97271 38236  |  admin@onclicksolutions.in', pageW/2, 35, { align: 'center' });
+    doc.roundedRect(margin, 10, pageW - margin*2, 36, 4, 4, 'F');
 
-    y = 50;
+    // Logo image (left side inside header)
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', margin + 4, 13, 28, 28);
+    }
+
+    // Brand name - website style (right of logo)
+    var textX = logoBase64 ? margin + 38 : pageW / 2;
+    var textAlign = logoBase64 ? 'left' : 'center';
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('On Click Solutions', textX, 24, { align: textAlign });
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 220, 255);
+    doc.text('A Surekha Enterprises Venture', textX, 31, { align: textAlign });
+    doc.setTextColor(180, 205, 255);
+    doc.text('WhatsApp: +91 97271 38236  |  admin@onclicksolutions.in', textX, 37, { align: textAlign });
+
+    y = 56;
     doc.setTextColor(30, 30, 60);
     doc.setFontSize(15); doc.setFont('helvetica', 'bold');
     doc.text('TAX INVOICE', pageW/2, y, { align: 'center' });
