@@ -1743,6 +1743,7 @@ function renderAdminList(apps) {
 
       // Mark Payment Received button — separate row inside actDiv
       if (a.quote) {
+        console.log('PayBtn check - docId:', a.docId, 'quote:', a.quote, 'paymentStatus:', a.paymentStatus);
         var payRow = document.createElement('div');
         payRow.style.cssText = 'width:100%;margin-top:6px;';
         var payMarkBtn = document.createElement('button');
@@ -1887,7 +1888,7 @@ async function markPaymentReceived(docId, clientName, action) {
       });
       showToast('Payment received mark ho gaya! ✅', 'success');
     }
-    renderAdmin();
+    // onSnapshot automatically refreshes the list
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
   }
