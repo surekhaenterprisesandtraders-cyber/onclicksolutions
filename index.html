@@ -629,8 +629,16 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="screen-dashboard" class="screen">
+<!-- PROFILE -->
+<div id="screen-profile" class="screen">
+  <div class="dashboard-header">
+    <h2>👤 My Profile</h2>
+    <p>Apni details dekho aur update karo</p>
+  </div>
+  <div style="max-width:520px;margin:0 auto;padding:24px 20px;">
+    <div id="profileContent"></div>
+  </div>
+</div>
   <div class="dashboard-header">
     <h2 id="dashGreeting">My Applications</h2>
     <p>Track the status of all your service requests</p>
@@ -1206,6 +1214,11 @@ function updateNav() {
     btnMyApps.id = 'navMyApps';
     btnMyApps.textContent = 'My Applications';
     btnMyApps.onclick = function() { showScreen('dashboard'); renderDashboard(); };
+    var btnProfile = document.createElement('button');
+    btnProfile.className = 'btn btn-outline';
+    btnProfile.id = 'navProfile';
+    btnProfile.innerHTML = '👤 Profile';
+    btnProfile.onclick = function() { showScreen('profile'); renderProfile(); };
     var btnOut = document.createElement('button');
     btnOut.className = 'btn btn-primary';
     btnOut.id = 'navLogout';
@@ -1213,6 +1226,7 @@ function updateNav() {
     btnOut.onclick = function() { logout(); };
     navRight.appendChild(btnQA);
     navRight.appendChild(btnMyApps);
+    navRight.appendChild(btnProfile);
     navRight.appendChild(btnOut);
   }
 }
@@ -2356,6 +2370,148 @@ function exportToCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('CSV exported! ✅', 'success');
+}
+
+// ===== PROFILE =====
+function renderProfile() {
+  if (!currentUser) return;
+  var container = document.getElementById('profileContent');
+  container.innerHTML = '<div style="color:var(--gray);font-size:13px;">Loading...</div>';
+
+  db.collection('users').doc(currentUser.id).get().then(function(snap) {
+    var data = snap.exists ? snap.data() : {};
+    container.innerHTML = '';
+
+    // Avatar card
+    var avatarCard = document.createElement('div');
+    avatarCard.style.cssText = 'background:white;border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);text-align:center;';
+    var avatarCircle = document.createElement('div');
+    avatarCircle.style.cssText = 'width:72px;height:72px;border-radius:50%;background:#eff6ff;border:3px solid #1a56db;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#1a56db;margin:0 auto 12px;';
+    avatarCircle.textContent = (data.name || currentUser.email || 'U').charAt(0).toUpperCase();
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:18px;font-weight:700;color:var(--dark);';
+    nameEl.textContent = data.name || '';
+    var emailEl = document.createElement('div');
+    emailEl.style.cssText = 'font-size:13px;color:var(--gray);margin-top:3px;';
+    emailEl.textContent = data.email || currentUser.email || '';
+    var joinEl = document.createElement('div');
+    joinEl.style.cssText = 'font-size:11px;color:#9ca3af;margin-top:4px;';
+    if (data.createdAt) {
+      var d = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      joinEl.textContent = 'Member since ' + d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    }
+    avatarCard.appendChild(avatarCircle);
+    avatarCard.appendChild(nameEl);
+    avatarCard.appendChild(emailEl);
+    avatarCard.appendChild(joinEl);
+    container.appendChild(avatarCard);
+
+    // Edit form card
+    var formCard = document.createElement('div');
+    formCard.style.cssText = 'background:white;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);';
+
+    var formTitle = document.createElement('div');
+    formTitle.style.cssText = 'font-size:15px;font-weight:700;color:var(--dark);margin-bottom:18px;';
+    formTitle.innerHTML = '✏️ Edit Details';
+    formCard.appendChild(formTitle);
+
+    function makeField(label, id, value, type, placeholder) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-bottom:14px;';
+      var lbl = document.createElement('label');
+      lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--gray);display:block;margin-bottom:5px;';
+      lbl.textContent = label;
+      var inp = document.createElement('input');
+      inp.type = type || 'text';
+      inp.id = id;
+      inp.value = value || '';
+      inp.placeholder = placeholder || '';
+      inp.style.cssText = 'width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box;';
+      inp.onfocus = function() { this.style.borderColor = '#1a56db'; };
+      inp.onblur = function() { this.style.borderColor = 'var(--border)'; };
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      return wrap;
+    }
+
+    formCard.appendChild(makeField('Full Name', 'profileName', data.name, 'text', 'Apna naam likhein'));
+    formCard.appendChild(makeField('Phone Number', 'profilePhone', data.phone, 'tel', '10-digit mobile number'));
+    formCard.appendChild(makeField('Email Address', 'profileEmail', data.email || currentUser.email, 'email', 'Email address'));
+
+    // Password change section
+    var passDiv = document.createElement('div');
+    passDiv.style.cssText = 'margin-top:6px;padding-top:14px;border-top:1px solid var(--border);';
+    var passTitle = document.createElement('div');
+    passTitle.style.cssText = 'font-size:12px;font-weight:600;color:var(--gray);margin-bottom:10px;';
+    passTitle.textContent = '🔒 Change Password (optional)';
+    passDiv.appendChild(passTitle);
+    passDiv.appendChild(makeField('New Password', 'profilePassword', '', 'password', '6+ characters (blank = no change)'));
+    formCard.appendChild(passDiv);
+
+    // Save button
+    var saveBtn = document.createElement('button');
+    saveBtn.style.cssText = 'width:100%;padding:12px;background:#1a56db;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;';
+    saveBtn.innerHTML = '💾 Save Changes';
+    saveBtn.addEventListener('click', updateUserProfile);
+    formCard.appendChild(saveBtn);
+
+    // Back button
+    var backBtn = document.createElement('button');
+    backBtn.style.cssText = 'width:100%;padding:10px;background:transparent;color:var(--gray);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;';
+    backBtn.innerHTML = '← Back to My Applications';
+    backBtn.addEventListener('click', function() { showScreen('dashboard'); renderDashboard(); });
+    formCard.appendChild(backBtn);
+
+    container.appendChild(formCard);
+  }).catch(function(e) {
+    document.getElementById('profileContent').innerHTML = '<div style="color:#dc2626;">Error loading profile: ' + e.message + '</div>';
+  });
+}
+
+async function updateUserProfile() {
+  var name = document.getElementById('profileName').value.trim();
+  var phone = document.getElementById('profilePhone').value.trim();
+  var email = document.getElementById('profileEmail').value.trim();
+  var password = document.getElementById('profilePassword').value;
+
+  if (!name) { showToast('Naam likhna zaroori hai!', 'error'); return; }
+  if (!phone || phone.length < 10) { showToast('Valid phone number likhein!', 'error'); return; }
+  if (!email) { showToast('Email likhna zaroori hai!', 'error'); return; }
+
+  try {
+    var user = firebase.auth().currentUser;
+
+    // Update Firestore
+    await db.collection('users').doc(currentUser.id).update({ name: name, phone: phone, email: email });
+
+    // Update Firebase Auth display name
+    await user.updateProfile({ displayName: name });
+
+    // Update email if changed
+    if (email !== user.email) {
+      await user.updateEmail(email);
+    }
+
+    // Update password if provided
+    if (password) {
+      if (password.length < 6) { showToast('Password kam se kam 6 characters ka hona chahiye!', 'error'); return; }
+      await user.updatePassword(password);
+    }
+
+    // Update local currentUser
+    currentUser.name = name;
+    currentUser.phone = phone;
+    currentUser.email = email;
+
+    showToast('Profile update ho gaya! ✅', 'success');
+    renderProfile(); // Refresh profile view
+  } catch(e) {
+    if (e.code === 'auth/requires-recent-login') {
+      showToast('Security ke liye pehle logout karke wapas login karein, phir try karein.', 'error');
+    } else {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
 }
 
 // ===== INVOICE SYSTEM =====
