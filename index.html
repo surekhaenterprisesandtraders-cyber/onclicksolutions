@@ -1148,6 +1148,14 @@ auth.onAuthStateChanged(async function(user) {
       phone: user.phoneNumber || '',
       role: isAdmin ? 'admin' : 'client'
     };
+    // Fetch phone from Firestore users collection
+    db.collection('users').doc(user.uid).get().then(function(snap) {
+      if (snap.exists) {
+        var d = snap.data();
+        if (d.phone) currentUser.phone = d.phone;
+        if (d.name) currentUser.name = d.name;
+      }
+    }).catch(function(){});
     updateNav();
     // Restore page from URL hash on refresh
     var hash = window.location.hash.replace('#', '');
@@ -2380,6 +2388,10 @@ function renderProfile() {
 
   db.collection('users').doc(currentUser.id).get().then(function(snap) {
     var data = snap.exists ? snap.data() : {};
+    // Fallback to currentUser if Firestore data missing
+    if (!data.name) data.name = currentUser.name || '';
+    if (!data.phone) data.phone = currentUser.phone || '';
+    if (!data.email) data.email = currentUser.email || firebase.auth().currentUser.email || '';
     container.innerHTML = '';
 
     // Avatar card
