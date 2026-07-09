@@ -2149,6 +2149,9 @@ function showScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   window.scrollTo({ top:0, behavior:'smooth' });
   setPageTitle(name);
+  // Show footer only on home screen
+  var footer = document.querySelector('footer');
+  if (footer) footer.style.display = name === 'home' ? '' : 'none';
   if (history.state && history.state.screen !== name) {
     history.pushState({ screen: name }, '', '#' + name);
   } else if (!history.state) {
