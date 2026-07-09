@@ -1506,9 +1506,11 @@ function renderDashboard() {
     if (myApps.length === 0) {
       var noDiv = document.createElement('div');
       noDiv.className = 'empty-state';
-      noDiv.innerHTML = '<div class="empty-state-icon">📋</div><div class="empty-state-title">No applications yet</div><div class="empty-state-sub">Apply for a government service to get started — it only takes a minute!</div>';
+      noDiv.style.cssText = 'padding:56px 24px;text-align:center;';
+      noDiv.innerHTML = '<div style="font-size:56px;margin-bottom:16px;">📋</div><div style="font-size:17px;font-weight:700;color:var(--dark);margin-bottom:8px;">Koi application nahi hai abhi</div><div style="font-size:13px;color:var(--gray);margin-bottom:20px;">Koi bhi government service ke liye apply karein — sirf ek minute lagta hai!</div>';
       var bBtn = document.createElement('button');
       bBtn.className = 'empty-state-btn';
+      bBtn.style.cssText = 'background:#1a56db;color:white;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;';
       bBtn.innerHTML = '🚀 Browse Services';
       bBtn.onclick = function(){ showScreen('home'); };
       noDiv.appendChild(bBtn);
