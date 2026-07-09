@@ -1743,7 +1743,6 @@ function renderAdminList(apps) {
 
       // Mark Payment Received button — separate row inside actDiv
       if (a.quote) {
-        console.log('PayBtn check - docId:', a.docId, 'quote:', a.quote, 'paymentStatus:', a.paymentStatus);
         var payRow = document.createElement('div');
         payRow.style.cssText = 'width:100%;margin-top:6px;';
         var payMarkBtn = document.createElement('button');
@@ -3158,7 +3157,6 @@ function downloadCertificate(app) {
 }
 
 function downloadReceiptFromApp(app) {
-  console.log('Receipt app data:', app.docId, 'paymentStatus:', app.paymentStatus, 'quote:', app.quote);
   try {
     var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     if (!jsPDF) {
