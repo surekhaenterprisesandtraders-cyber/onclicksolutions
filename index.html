@@ -382,23 +382,6 @@ if ('serviceWorker' in navigator) {
     .stat-item { min-width:80px; }
   }
 
-  /* MOBILE BOTTOM NAV */
-  .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; height:60px; background:white; border-top:1.5px solid var(--border); z-index:9990; padding-bottom:env(safe-area-inset-bottom); }
-  .bottom-nav-inner { display:flex; height:60px; }
-  .bottom-nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; border:none; background:transparent; padding:0; position:relative; }
-  .bottom-nav-item .bn-icon { font-size:20px; line-height:1; }
-  .bottom-nav-item .bn-label { font-size:10px; font-weight:600; color:#9ca3af; }
-  .bottom-nav-item.active .bn-label { color:#1a56db; }
-  .bottom-nav-item .bn-badge { display:none; position:absolute; top:6px; right:calc(50% - 18px); background:#dc2626; color:white; font-size:9px; font-weight:700; border-radius:50%; width:15px; height:15px; align-items:center; justify-content:center; }
-  @media(max-width:600px) {
-    .bottom-nav { display:block; }
-    .nav-right button:not(#navLogout) { display:none; }
-    body { padding-bottom:60px; }
-    .whatsapp-fab { bottom:calc(70px + env(safe-area-inset-bottom)); }
-    .chat-modal { bottom:calc(70px + env(safe-area-inset-bottom)); }
-    .toast { bottom:calc(70px + env(safe-area-inset-bottom)); }
-  }
-
   /* WhatsApp Floating Button */
   .whatsapp-fab {
     position:fixed;
@@ -1230,7 +1213,6 @@ function updateNav() {
   var navRight = document.getElementById('navRight');
   navRight.innerHTML = '';
   if (!currentUser) {
-    showBottomNav(false);
     var btnL = document.createElement('button');
     btnL.className = 'btn btn-outline';
     btnL.textContent = 'Login';
@@ -1244,7 +1226,6 @@ function updateNav() {
     return;
   }
   if (currentUser.role === 'admin') {
-    showBottomNav(false);
     var spanAdmin = document.createElement('span');
     spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
     spanAdmin.textContent = 'Admin';
@@ -1260,8 +1241,6 @@ function updateNav() {
     navRight.appendChild(btnPanel);
     navRight.appendChild(btnLogout);
   } else {
-    showBottomNav(true);
-    updateBottomNav('home');
     var btnQA = document.createElement('button');
     btnQA.className = 'btn btn-outline';
     btnQA.id = 'navQuickApply';
@@ -2657,19 +2636,6 @@ async function updateUserProfile() {
       showToast('Error: ' + e.message, 'error');
     }
   }
-}
-
-// ===== MOBILE BOTTOM NAV =====
-function updateBottomNav(screen) {
-  var items = document.querySelectorAll('.bottom-nav-item');
-  items.forEach(function(item) { item.classList.remove('active'); item.querySelector('.bn-label').style.color = '#9ca3af'; });
-  var active = document.getElementById('bn-' + screen);
-  if (active) { active.classList.add('active'); active.querySelector('.bn-label').style.color = '#1a56db'; }
-}
-
-function showBottomNav(show) {
-  var nav = document.getElementById('bottomNav');
-  if (nav) nav.style.display = show ? 'block' : 'none';
 }
 
 // ===== IN-APP CHAT =====
@@ -4165,27 +4131,6 @@ init();
   <div class="chat-input-row">
     <input class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMessage()">
     <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
-  </div>
-</div>
-<!-- MOBILE BOTTOM NAV -->
-<div class="bottom-nav" id="bottomNav" style="display:none;">
-  <div class="bottom-nav-inner">
-    <button class="bottom-nav-item" id="bn-home" onclick="showScreen('home');updateBottomNav('home')">
-      <span class="bn-icon">🏠</span>
-      <span class="bn-label">Home</span>
-    </button>
-    <button class="bottom-nav-item" id="bn-dashboard" onclick="showScreen('dashboard');renderDashboard();updateBottomNav('dashboard')">
-      <span class="bn-icon">📋</span>
-      <span class="bn-label">My Apps</span>
-    </button>
-    <button class="bottom-nav-item" id="bn-profile" onclick="showScreen('profile');renderProfile();updateBottomNav('profile')">
-      <span class="bn-icon">👤</span>
-      <span class="bn-label">Profile</span>
-    </button>
-    <button class="bottom-nav-item" id="bn-about" onclick="showScreen('about');updateBottomNav('about')">
-      <span class="bn-icon">ℹ️</span>
-      <span class="bn-label">About</span>
-    </button>
   </div>
 </div>
 
