@@ -1239,6 +1239,35 @@ function updateNav() {
     btnProfile.id = 'navProfile';
     btnProfile.innerHTML = '👤 Profile';
     btnProfile.onclick = function() { showScreen('profile'); renderProfile(); };
+
+    // Notification Bell
+    var bellWrap = document.createElement('div');
+    bellWrap.style.cssText = 'position:relative;display:inline-flex;align-items:center;';
+    var bellBtn = document.createElement('button');
+    bellBtn.id = 'notifBell';
+    bellBtn.style.cssText = 'background:transparent;border:1.5px solid var(--border);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;position:relative;';
+    bellBtn.innerHTML = '🔔';
+    bellBtn.onclick = function() { toggleNotifDropdown(); };
+    var bellBadge = document.createElement('span');
+    bellBadge.id = 'notifBadge';
+    bellBadge.style.cssText = 'display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;';
+    bellWrap.appendChild(bellBtn);
+    bellWrap.appendChild(bellBadge);
+
+    // Notification Dropdown
+    var notifDrop = document.createElement('div');
+    notifDrop.id = 'notifDropdown';
+    notifDrop.style.cssText = 'display:none;position:absolute;top:48px;right:0;width:320px;background:white;border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:9999;overflow:hidden;';
+    var notifHeader = document.createElement('div');
+    notifHeader.style.cssText = 'padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;';
+    notifHeader.innerHTML = '<span style="font-weight:700;font-size:14px;color:var(--dark);">🔔 Notifications</span><button onclick="markAllNotifsRead()" style="background:transparent;border:none;font-size:11px;color:#1a56db;cursor:pointer;font-weight:600;">Mark all read</button>';
+    var notifList = document.createElement('div');
+    notifList.id = 'notifList';
+    notifList.style.cssText = 'max-height:320px;overflow-y:auto;';
+    notifDrop.appendChild(notifHeader);
+    notifDrop.appendChild(notifList);
+    bellWrap.appendChild(notifDrop);
+
     var btnOut = document.createElement('button');
     btnOut.className = 'btn btn-primary';
     btnOut.id = 'navLogout';
@@ -1247,7 +1276,11 @@ function updateNav() {
     navRight.appendChild(btnQA);
     navRight.appendChild(btnMyApps);
     navRight.appendChild(btnProfile);
+    navRight.appendChild(bellWrap);
     navRight.appendChild(btnOut);
+
+    // Load notifications
+    loadNotifications();
   }
 }
 
@@ -1618,11 +1651,13 @@ function renderDashboard() {
         div.appendChild(infoDiv);
         div.appendChild(actionDiv);
         div.appendChild(docsSection);
+        div.appendChild(renderTimeline(a));
         appList.appendChild(div);
         return;
       }
       div.appendChild(infoDiv);
       div.appendChild(actionDiv);
+      div.appendChild(renderTimeline(a));
       appList.appendChild(div);
     });
   }, function(error) {
@@ -1883,15 +1918,23 @@ function renderAdminList(apps) {
 
 async function updateStatus(docId, status) {
   try {
-    await db.collection('applications').doc(docId).update({ status: status });
+    var historyEntry = {
+      status: status,
+      timestamp: new Date().toISOString(),
+      changedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    };
+    await db.collection('applications').doc(docId).update({
+      status: status,
+      statusHistory: firebase.firestore.FieldValue.arrayUnion(historyEntry),
+      lastStatusUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    });
     showToast('Status updated!', 'success');
     // Send email notification to client
     try {
       var appDoc = await db.collection('applications').doc(docId).get();
       var appData = appDoc.data();
       if (appData && appData.email) {
-        var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : '🕐';
-        // Client status notification - old template
+        var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : status === 'Rejected' ? '❌' : '🕐';
         emailjs.send('service_ybsphno', 'template_1eqx68r', {
           client_name: appData.name || 'Customer',
           client_phone: appData.phone || '',
@@ -2552,6 +2595,190 @@ async function updateUserProfile() {
       showToast('Error: ' + e.message, 'error');
     }
   }
+}
+
+// ===== NOTIFICATIONS =====
+var _notifUnsubscribe = null;
+
+function loadNotifications() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  if (_notifUnsubscribe) _notifUnsubscribe();
+
+  _notifUnsubscribe = db.collection('applications')
+    .where('userId', '==', currentUser.id)
+    .orderBy('lastStatusUpdate', 'desc')
+    .limit(20)
+    .onSnapshot(function(snap) {
+      var readNotifs = JSON.parse(localStorage.getItem('readNotifs_' + currentUser.id) || '[]');
+      var notifs = [];
+      snap.docs.forEach(function(d) {
+        var a = d.data();
+        if (a.statusHistory && a.statusHistory.length > 0) {
+          a.statusHistory.slice().reverse().forEach(function(h) {
+            var key = d.id + '_' + h.timestamp;
+            notifs.push({ key: key, docId: d.id, service: a.service, subService: a.subService, status: h.status, changedAt: h.changedAt, read: readNotifs.includes(key) });
+          });
+        }
+      });
+      notifs.sort(function(a, b) { return new Date(b.key.split('_')[1]) - new Date(a.key.split('_')[1]); });
+      var unread = notifs.filter(function(n) { return !n.read; }).length;
+
+      // Update badge
+      var badge = document.getElementById('notifBadge');
+      if (badge) {
+        if (unread > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = unread > 9 ? '9+' : unread;
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      // Render list
+      var list = document.getElementById('notifList');
+      if (!list) return;
+      list.innerHTML = '';
+      if (notifs.length === 0) {
+        list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px;">No notifications yet</div>';
+        return;
+      }
+      notifs.slice(0, 15).forEach(function(n) {
+        var item = document.createElement('div');
+        item.style.cssText = 'padding:12px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;background:' + (n.read ? 'white' : '#eff6ff') + ';';
+        item.onmouseenter = function() { this.style.background = '#f8fafc'; };
+        item.onmouseleave = function() { this.style.background = n.read ? 'white' : '#eff6ff'; };
+        var statusColor = n.status === 'Completed' ? '#059669' : n.status === 'Rejected' ? '#dc2626' : n.status === 'In Progress' ? '#d97706' : '#6b7280';
+        item.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--dark);">' + (n.service || '') + (n.subService ? ' — ' + n.subService : '') + '</div>' +
+          '<div style="font-size:12px;margin-top:3px;">Status changed to <strong style="color:' + statusColor + ';">' + n.status + '</strong></div>' +
+          '</div>' +
+          (!n.read ? '<span style="width:8px;height:8px;border-radius:50%;background:#1a56db;flex-shrink:0;margin-top:4px;"></span>' : '') +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--gray);margin-top:4px;">' + (n.changedAt || '') + '</div>';
+        item.addEventListener('click', function() { markNotifRead(n.key); toggleNotifDropdown(); showScreen('dashboard'); renderDashboard(); });
+        list.appendChild(item);
+      });
+    }, function(e) { console.log('Notif error:', e); });
+}
+
+function toggleNotifDropdown() {
+  var drop = document.getElementById('notifDropdown');
+  if (!drop) return;
+  drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+  // Close on outside click
+  if (drop.style.display === 'block') {
+    setTimeout(function() {
+      document.addEventListener('click', function closeNotif(e) {
+        if (!drop.contains(e.target) && e.target.id !== 'notifBell') {
+          drop.style.display = 'none';
+          document.removeEventListener('click', closeNotif);
+        }
+      });
+    }, 100);
+  }
+}
+
+function markNotifRead(key) {
+  if (!currentUser) return;
+  var stored = JSON.parse(localStorage.getItem('readNotifs_' + currentUser.id) || '[]');
+  if (!stored.includes(key)) { stored.push(key); localStorage.setItem('readNotifs_' + currentUser.id, JSON.stringify(stored)); }
+}
+
+function markAllNotifsRead() {
+  var list = document.getElementById('notifList');
+  if (!list || !currentUser) return;
+  var allKeys = Array.from(list.querySelectorAll('[data-key]')).map(function(el) { return el.dataset.key; });
+  var stored = JSON.parse(localStorage.getItem('readNotifs_' + currentUser.id) || '[]');
+  // Mark all current notifs as read
+  db.collection('applications').where('userId', '==', currentUser.id).get().then(function(snap) {
+    snap.docs.forEach(function(d) {
+      var a = d.data();
+      if (a.statusHistory) {
+        a.statusHistory.forEach(function(h) {
+          var key = d.id + '_' + h.timestamp;
+          if (!stored.includes(key)) stored.push(key);
+        });
+      }
+    });
+    localStorage.setItem('readNotifs_' + currentUser.id, JSON.stringify(stored));
+    loadNotifications();
+  });
+  var badge = document.getElementById('notifBadge');
+  if (badge) badge.style.display = 'none';
+}
+
+// ===== APPLICATION TIMELINE =====
+function renderTimeline(app) {
+  var allSteps = ['Pending', 'In Progress', 'Completed'];
+  var isRejected = app.status === 'Rejected';
+  var history = app.statusHistory || [];
+
+  var container = document.createElement('div');
+  container.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;';
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:11px;font-weight:700;color:var(--gray);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;';
+  title.textContent = '📊 Application Timeline';
+  container.appendChild(title);
+
+  var stepsToShow = isRejected ? ['Pending', 'In Progress', 'Rejected'] : allSteps;
+  var timelineWrap = document.createElement('div');
+  timelineWrap.style.cssText = 'display:flex;align-items:flex-start;gap:0;';
+
+  stepsToShow.forEach(function(step, i) {
+    var isDone = false;
+    var isCurrent = app.status === step;
+    var stepDate = '';
+
+    // Find from history
+    var histEntry = history.find(function(h) { return h.status === step; });
+    if (histEntry) { isDone = true; stepDate = histEntry.changedAt || ''; }
+    if (step === 'Pending' && !histEntry) { isDone = true; stepDate = app.date || ''; }
+
+    var stepColor = isDone || isCurrent
+      ? (step === 'Rejected' ? '#dc2626' : step === 'Completed' ? '#059669' : '#1a56db')
+      : '#d1d5db';
+
+    var stepWrap = document.createElement('div');
+    stepWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex:1;';
+
+    // Circle
+    var circle = document.createElement('div');
+    circle.style.cssText = 'width:28px;height:28px;border-radius:50%;background:' + (isDone || isCurrent ? stepColor : '#f3f4f6') + ';border:2px solid ' + stepColor + ';display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;';
+    circle.textContent = isDone ? (step === 'Rejected' ? '✕' : step === 'Completed' ? '✓' : '✓') : (i + 1);
+    circle.style.color = isDone || isCurrent ? 'white' : '#9ca3af';
+
+    // Label
+    var label = document.createElement('div');
+    label.style.cssText = 'font-size:10px;font-weight:' + (isCurrent ? '700' : '500') + ';color:' + (isDone || isCurrent ? stepColor : '#9ca3af') + ';margin-top:5px;text-align:center;';
+    label.textContent = step;
+
+    // Date
+    if (stepDate) {
+      var dateEl = document.createElement('div');
+      dateEl.style.cssText = 'font-size:9px;color:#9ca3af;margin-top:2px;text-align:center;';
+      dateEl.textContent = stepDate.split(',')[0];
+      stepWrap.appendChild(circle);
+      stepWrap.appendChild(label);
+      stepWrap.appendChild(dateEl);
+    } else {
+      stepWrap.appendChild(circle);
+      stepWrap.appendChild(label);
+    }
+
+    timelineWrap.appendChild(stepWrap);
+
+    // Connector line
+    if (i < stepsToShow.length - 1) {
+      var line = document.createElement('div');
+      line.style.cssText = 'flex:0 0 auto;width:40px;height:2px;background:' + (isDone ? stepColor : '#e5e7eb') + ';margin-top:13px;';
+      timelineWrap.appendChild(line);
+    }
+  });
+
+  container.appendChild(timelineWrap);
+  return container;
 }
 
 // ===== INVOICE SYSTEM =====
