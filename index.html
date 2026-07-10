@@ -332,6 +332,23 @@ if ('serviceWorker' in navigator) {
   .toast.show { transform:translateX(0); }
   .toast.success { border-left:4px solid var(--success); }
   .toast.error { border-left:4px solid var(--danger); }
+  /* CHAT */
+  .chat-modal { display:none;position:fixed;bottom:80px;right:24px;width:340px;height:480px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.18);z-index:9998;flex-direction:column;overflow:hidden;border:1.5px solid var(--border); }
+  .chat-modal.open { display:flex; }
+  .chat-header { background:#1a56db;padding:14px 16px;display:flex;align-items:center;justify-content:space-between; }
+  .chat-header-title { color:white;font-size:14px;font-weight:700; }
+  .chat-header-sub { color:rgba(255,255,255,0.7);font-size:11px;margin-top:1px; }
+  .chat-close { background:transparent;border:none;color:white;font-size:18px;cursor:pointer;padding:0;line-height:1; }
+  .chat-messages { flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#f8fafc; }
+  .chat-bubble { max-width:80%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word; }
+  .chat-bubble.sent { background:#1a56db;color:white;align-self:flex-end;border-bottom-right-radius:4px; }
+  .chat-bubble.recv { background:white;color:var(--dark);align-self:flex-start;border:1px solid var(--border);border-bottom-left-radius:4px; }
+  .chat-time { font-size:10px;opacity:0.6;margin-top:3px; }
+  .chat-input-row { padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;background:white; }
+  .chat-input { flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none; }
+  .chat-input:focus { border-color:#1a56db; }
+  .chat-send-btn { background:#1a56db;color:white;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px; }
+  .chat-badge { display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:white;font-size:9px;font-weight:700;border-radius:50%;width:16px;height:16px;align-items:center;justify-content:center; }
   .file-item { font-size:12px; color:var(--success); margin-top:4px; padding:4px 8px; background:#f0fdf4; border-radius:6px; }
   @media(max-width:600px) {
     .stats-row { gap:24px; }
@@ -1615,6 +1632,15 @@ function renderDashboard() {
         });
       }; })(a.docId));
       actionDiv.appendChild(rcptBtn);
+
+      // Chat button
+      var chatBtn = document.createElement('button');
+      chatBtn.style.cssText = 'position:relative;background:#eff6ff;color:#1a56db;border:1.5px solid #1a56db;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;';
+      chatBtn.innerHTML = '💬 Chat';
+      chatBtn.addEventListener('click', (function(app){ return function(){
+        openChat(app.docId, app.service + (app.subService ? ' — ' + app.subService : ''), 'Ref: #' + (app.refId || ''));
+      }; })(a));
+      actionDiv.appendChild(chatBtn);
       // Review button for completed applications
       if (a.status === 'Completed') {
         var revBtn = document.createElement('button');
@@ -1822,6 +1848,16 @@ function renderAdminList(apps) {
       actDiv.appendChild(qBtn);
       actDiv.appendChild(delBtn);
       actDiv.appendChild(adminRcptBtn);
+
+      // Admin chat button
+      var adminChatBtn = document.createElement('button');
+      adminChatBtn.className = 'btn btn-outline';
+      adminChatBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#eff6ff;color:#1a56db;border-color:#1a56db;';
+      adminChatBtn.innerHTML = '💬 Chat';
+      adminChatBtn.addEventListener('click', (function(app){ return function(){
+        openChat(app.docId, app.name + ' — ' + app.service, 'Ref: #' + (app.refId || ''));
+      }; })(a));
+      actDiv.appendChild(adminChatBtn);
 
       // Mark Payment Received button — separate row inside actDiv
       if (a.quote) {
@@ -2594,6 +2630,107 @@ async function updateUserProfile() {
     } else {
       showToast('Error: ' + e.message, 'error');
     }
+  }
+}
+
+// ===== IN-APP CHAT =====
+var _chatDocId = null;
+var _chatUnsub = null;
+
+function openChat(docId, title, sub) {
+  _chatDocId = docId;
+  document.getElementById('chatTitle').textContent = '💬 ' + (title || 'Chat');
+  document.getElementById('chatSub').textContent = sub || '';
+  document.getElementById('chatModal').classList.add('open');
+  document.getElementById('chatInput').focus();
+  loadChatMessages(docId);
+}
+
+function closeChat() {
+  document.getElementById('chatModal').classList.remove('open');
+  if (_chatUnsub) { _chatUnsub(); _chatUnsub = null; }
+  _chatDocId = null;
+}
+
+function loadChatMessages(docId) {
+  if (_chatUnsub) _chatUnsub();
+  var messagesDiv = document.getElementById('chatMessages');
+  messagesDiv.innerHTML = '<div style="text-align:center;color:var(--gray);font-size:12px;padding:16px;">Loading...</div>';
+
+  _chatUnsub = db.collection('chats').doc(docId).collection('messages')
+    .orderBy('timestamp', 'asc')
+    .onSnapshot(function(snap) {
+      messagesDiv.innerHTML = '';
+      if (snap.empty) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'text-align:center;color:var(--gray);font-size:12px;padding:24px;';
+        emptyDiv.textContent = 'No messages yet. Say hello! 👋';
+        messagesDiv.appendChild(emptyDiv);
+        return;
+      }
+
+      // Mark as read
+      var isAdmin = currentUser && currentUser.role === 'admin';
+      db.collection('chats').doc(docId).set({
+        [isAdmin ? 'adminUnread' : 'clientUnread']: 0
+      }, { merge: true });
+
+      snap.docs.forEach(function(d) {
+        var msg = d.data();
+        var isMe = (isAdmin && msg.sender === 'admin') || (!isAdmin && msg.sender === 'client');
+
+        var bubble = document.createElement('div');
+        bubble.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe ? 'flex-end' : 'flex-start') + ';';
+
+        var text = document.createElement('div');
+        text.className = 'chat-bubble ' + (isMe ? 'sent' : 'recv');
+        text.textContent = msg.text || '';
+
+        var time = document.createElement('div');
+        time.className = 'chat-time';
+        time.style.cssText = 'font-size:10px;color:#9ca3af;margin-top:2px;text-align:' + (isMe ? 'right' : 'left') + ';';
+        if (msg.timestamp) {
+          var d2 = msg.timestamp.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp);
+          time.textContent = d2.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' · ' + (msg.senderName || (isMe ? 'You' : ''));
+        }
+
+        bubble.appendChild(text);
+        bubble.appendChild(time);
+        messagesDiv.appendChild(bubble);
+      });
+
+      // Scroll to bottom
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+}
+
+async function sendChatMessage() {
+  var input = document.getElementById('chatInput');
+  var text = input.value.trim();
+  if (!text || !_chatDocId || !currentUser) return;
+  input.value = '';
+
+  var isAdmin = currentUser.role === 'admin';
+  var sender = isAdmin ? 'admin' : 'client';
+  var senderName = isAdmin ? 'Admin' : (currentUser.name || 'Client');
+
+  try {
+    await db.collection('chats').doc(_chatDocId).collection('messages').add({
+      text: text,
+      sender: sender,
+      senderName: senderName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Update unread count for other party
+    var updateField = isAdmin ? 'clientUnread' : 'adminUnread';
+    await db.collection('chats').doc(_chatDocId).set({
+      [updateField]: firebase.firestore.FieldValue.increment(1),
+      lastMessage: text,
+      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+      applicationId: _chatDocId
+    }, { merge: true });
+  } catch(e) {
+    showToast('Message send failed!', 'error');
   }
 }
 
@@ -3973,6 +4110,24 @@ init();
   </svg>
 </a>
 <div class="whatsapp-fab-tooltip">Chat on WhatsApp</div>
+
+<!-- CHAT MODAL -->
+<div class="chat-modal" id="chatModal">
+  <div class="chat-header">
+    <div>
+      <div class="chat-header-title" id="chatTitle">💬 Chat</div>
+      <div class="chat-header-sub" id="chatSub"></div>
+    </div>
+    <button class="chat-close" onclick="closeChat()">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div style="text-align:center;color:var(--gray);font-size:12px;padding:16px;">Loading messages...</div>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChatMessage()">
+    <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
+  </div>
+</div>
 
 </body>
 </html>
