@@ -740,6 +740,15 @@ if ('serviceWorker' in navigator) {
     </div>
     <div id="adminUserList"></div>
   </div>
+
+  <!-- USER APPLICATIONS PANEL -->
+  <div id="userAppsPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="document.getElementById('userAppsPanel').style.display='none';document.getElementById('adminUsersPanel').style.display='block';" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">← Back to Users</button>
+      <div id="userAppsPanelTitle" style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);"></div>
+    </div>
+    <div id="userAppsList"></div>
+  </div>
 </div>
 
 <!-- AUTH MODAL -->
@@ -2609,6 +2618,74 @@ function closeAdminPanel(panelId) {
 
 var _allAdminUsers = [];
 
+function showUserApplications(user) {
+  document.getElementById('adminUsersPanel').style.display = 'none';
+  var panel = document.getElementById('userAppsPanel');
+  var list = document.getElementById('userAppsList');
+  var title = document.getElementById('userAppsPanelTitle');
+  panel.style.display = 'block';
+  title.textContent = '📋 ' + (user.name || 'User') + "'s Applications";
+  list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;">Loading...</div>';
+
+  db.collection('applications').where('userId', '==', user.id).orderBy('createdAt', 'desc').get()
+    .then(function(snap) {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:40px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:600;color:var(--dark);">No applications found</div><div style="font-size:13px;color:var(--gray);margin-top:6px;">This user has not submitted any applications yet.</div></div>';
+        return;
+      }
+      list.innerHTML = '';
+      var countDiv = document.createElement('div');
+      countDiv.style.cssText = 'font-size:13px;color:var(--gray);margin-bottom:12px;';
+      countDiv.textContent = 'Total: ' + snap.docs.length + ' application(s)';
+      list.appendChild(countDiv);
+
+      snap.docs.forEach(function(d) {
+        var a = Object.assign({}, d.data(), { docId: d.id });
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px;';
+
+        var topRow = document.createElement('div');
+        topRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;';
+
+        var svcInfo = document.createElement('div');
+        svcInfo.innerHTML =
+          '<div style="font-size:14px;font-weight:700;color:var(--dark);">' + (a.service || '') + (a.subService ? ' — ' + a.subService : '') + '</div>' +
+          '<div style="font-size:12px;color:var(--gray);margin-top:2px;">Ref: #' + (a.refId || '') + ' &middot; ' + (a.date || '') + '</div>';
+
+        var statusBadge = document.createElement('span');
+        statusBadge.className = 'status-badge ' + statusClass(a.status || 'Pending');
+        statusBadge.textContent = a.status || 'Pending';
+
+        topRow.appendChild(svcInfo);
+        topRow.appendChild(statusBadge);
+        card.appendChild(topRow);
+
+        var detailRow = document.createElement('div');
+        detailRow.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--gray);';
+        if (a.quote) {
+          var qSpan = document.createElement('span');
+          qSpan.innerHTML = '💰 Quote: <strong style="color:var(--dark);">₹' + a.quote + '</strong>';
+          detailRow.appendChild(qSpan);
+        }
+        if (a.paymentStatus) {
+          var pSpan = document.createElement('span');
+          pSpan.innerHTML = '💳 Payment: <strong style="color:' + (a.paymentStatus === 'Paid' ? '#15803d' : '#d97706') + ';">' + a.paymentStatus + '</strong>';
+          detailRow.appendChild(pSpan);
+        }
+        if (a.notes) {
+          var nSpan = document.createElement('span');
+          nSpan.innerHTML = '📝 ' + a.notes;
+          detailRow.appendChild(nSpan);
+        }
+        card.appendChild(detailRow);
+        list.appendChild(card);
+      });
+    })
+    .catch(function(e) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;">Error: ' + e.message + '</div>';
+    });
+}
+
 function showAdminUsers() {
   var panel = document.getElementById('adminUsersPanel');
   var invoicesPanel = document.getElementById('adminInvoicesPanel');
@@ -2725,6 +2802,13 @@ function renderAdminUserList(users) {
       dateDiv.textContent = '📅 Joined: ' + d.toLocaleDateString('en-IN');
       right.appendChild(dateDiv);
     }
+
+    // View Applications button
+    var viewAppsBtn = document.createElement('button');
+    viewAppsBtn.style.cssText = 'background:#eff6ff;color:#1a56db;border:1.5px solid #1a56db;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;';
+    viewAppsBtn.innerHTML = '📋 View Applications';
+    viewAppsBtn.addEventListener('click', (function(user){ return function(){ showUserApplications(user); }; })(u));
+    right.appendChild(viewAppsBtn);
 
     // WhatsApp quick contact
     if (u.phone) {
