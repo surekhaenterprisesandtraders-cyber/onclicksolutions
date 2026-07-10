@@ -727,7 +727,7 @@ if ('serviceWorker' in navigator) {
       <option>Domicile Certificate</option>
     </select>
     <input type="date" id="filterDate" onchange="applyAdminFilters()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;flex-shrink:0;">
-    <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:150px;max-width:100%;">
+    <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone / notes / service..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:150px;max-width:100%;">
     <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);flex-shrink:0;">✕ Clear</button>
     <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
     <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
@@ -2448,7 +2448,12 @@ function applyAdminFilters() {
       if (a.date !== filterDateStr) return false;
     }
     if (search) {
-      var haystack = ((a.name||'') + (a.phone||'') + (a.refId||'') + (a.email||'')).toLowerCase();
+      var haystack = [
+        a.name, a.phone, a.refId, a.email,
+        a.service, a.subService, a.notes,
+        a.remark, a.adminNotes, a.status,
+        a.quote
+      ].map(function(v){ return (v||'').toString().toLowerCase(); }).join(' ');
       if (!haystack.includes(search)) return false;
     }
     return true;
