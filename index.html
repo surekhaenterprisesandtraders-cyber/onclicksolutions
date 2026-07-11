@@ -393,10 +393,11 @@ if ('serviceWorker' in navigator) {
   @media(max-width:600px) {
     .bottom-nav { display:block; }
     body { padding-bottom:60px; }
-    .whatsapp-fab { bottom:calc(70px + env(safe-area-inset-bottom)); right:auto; left:calc(16px + env(safe-area-inset-left)); }
+    .whatsapp-fab { bottom:calc(68px + env(safe-area-inset-bottom)); right:16px; width:46px; height:46px; }
+    .whatsapp-fab svg { width:24px; height:24px; }
+    .whatsapp-fab-tooltip { display:none !important; }
     .chat-modal { bottom:calc(70px + env(safe-area-inset-bottom)); right:16px; width:calc(100vw - 32px); }
     .toast { bottom:calc(70px + env(safe-area-inset-bottom)); }
-    .whatsapp-fab-tooltip { display:none !important; }
   }
   @media(max-width:600px) {
     .logged-in-nav button:not(#navLogout) { display:none; }
