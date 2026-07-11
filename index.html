@@ -16,6 +16,11 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-G78B7052PN');
+
+  // Analytics helper
+  function trackEvent(eventName, params) {
+    try { gtag('event', eventName, params || {}); } catch(e) {}
+  }
 </script>
 <meta name="description" content="On Click Solutions — Mumbai's trusted government & business services consultancy. Aadhaar, PAN, Passport, Voter ID, GST, Driving License, Business Registration & more. Apply online, track status, pay securely.">
 <meta name="keywords" content="Aadhaar card Mumbai, PAN card apply, Passport services Mumbai, Voter ID, GST registration, Driving License, government services Mumbai, document services, On Click Solutions, Rahul Patwaa">
@@ -1409,6 +1414,7 @@ function openApply(serviceName) {
     txt.value = '';
   }
   showScreen('apply');
+  trackEvent('service_selected', { service_name: serviceName });
 }
 
 function clearFieldErrors(ids) {
@@ -1490,6 +1496,7 @@ async function submitApplication() {
     window._lastAppData = appData;
     selectedFiles = [];
     showScreen('success');
+    trackEvent('application_submit', { service: appData.service, sub_service: appData.subService || '' });
     showToast('Enquiry submitted! We will contact you shortly.', 'success');
     sendEmailNotification(appData);
     selectedFiles = [];
@@ -1554,6 +1561,7 @@ async function submitQuickApply() {
     document.getElementById('waShareBtn').href = 'https://wa.me/919727138236?text=' + waMsg2;
     window._lastAppData = appData;
     showScreen('success');
+    trackEvent('quick_apply_submit', { service: appData.service });
     showToast('Enquiry submitted! We will contact you shortly.', 'success');
     sendEmailNotification(appData);
     selectedQAFiles = [];
@@ -2129,6 +2137,7 @@ async function doLogin() {
       return;
     }
     closeModal();
+    trackEvent('login', { method: 'email' });
     showToast('Welcome back! \uD83D\uDC4B', 'success');
   } catch(e) {
     if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
@@ -2163,6 +2172,7 @@ async function doSignup() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     showToast('Account created! Please check your email to verify \uD83D\uDCE7', 'success');
+    trackEvent('sign_up', { method: 'email' });
     closeModal();
   } catch(e) {
     if (e.code === 'auth/email-already-in-use') showToast('Email already registered! Please login.', 'error');
@@ -3595,6 +3605,7 @@ async function downloadInvoicePDF(invoice) {
     doc.text('This is a computer generated invoice. For queries: +91 97271 38236', pageW/2, y + 5, { align: 'center' });
 
     doc.save('Invoice-' + (invoice.invoiceNo || 'OCS') + '.pdf');
+    trackEvent('invoice_download', { invoice_no: invoice.invoiceNo || '' });
     showToast('Invoice PDF downloaded! 🧾', 'success');
   } catch(e) {
     console.error('Invoice PDF error:', e);
