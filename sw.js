@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onclicksolutions-v3';
+const CACHE_NAME = 'onclicksolutions-v4';
 const urlsToCache = [
   '/onclicksolutions/',
   '/onclicksolutions/index.html'
@@ -15,21 +15,32 @@ self.addEventListener('install', function(event) {
 
 self.addEventListener('fetch', function(event) {
   var url = event.request.url;
-  // Never cache Firebase, Firestore, API calls
+  // Never cache these — always fresh
   if (url.includes('firestore.googleapis.com') ||
       url.includes('firebase') ||
       url.includes('googleapis.com') ||
       url.includes('emailjs') ||
       url.includes('uploadcare') ||
+      url.includes('ucarecdn') ||
       url.includes('qrserver') ||
       url.includes('api.')) {
     event.respondWith(fetch(event.request));
     return;
   }
+  // Cache first for static assets, network fallback
   event.respondWith(
     caches.match(event.request).then(function(response) {
       if (response) return response;
-      return fetch(event.request).catch(function() {
+      return fetch(event.request).then(function(networkResponse) {
+        // Cache new resources
+        if (networkResponse && networkResponse.status === 200) {
+          var responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
         return caches.match('/onclicksolutions/index.html');
       });
     })
