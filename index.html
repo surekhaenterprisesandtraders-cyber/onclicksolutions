@@ -3451,9 +3451,11 @@ async function downloadInvoicePDF(invoice) {
       });
     } catch(e) { logoBase64 = null; }
 
-    // Logo image (left side) with white border
+    // Logo image (left side) with white border - perfectly centered vertically
     if (logoBase64) {
-      var lx = margin + 4, ly = 13, lw = 28, lh = 28, lp = 0.25;
+      var lw = 28, lh = 28, lp = 0.25;
+      var lx = margin + 5;
+      var ly = (48 - lh) / 2; // vertically centered in header (header is 0 to 48)
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
       doc.addImage(logoBase64, 'PNG', lx, ly, lw, lh);
@@ -3890,10 +3892,12 @@ async function downloadReceiptFromApp(app) {
     doc.setFillColor(26, 86, 219);
     doc.roundedRect(margin, 10, pageW - margin*2, headerH, 4, 4, 'F');
 
-    // Logo image (left side of header)
+    // Logo image (left side of header) - perfectly centered vertically
     if (logoDataURL) {
       try {
-        var lx = margin + 4, ly = 14, lw = 22, lh = 22, lp = 0.25;
+        var lw = 22, lh = 22, lp = 0.25;
+        var lx = margin + 5;
+        var ly = 10 + (headerH - lh) / 2; // vertically centered in header
         doc.setFillColor(255, 255, 255);
         doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
         doc.addImage(logoDataURL, 'PNG', lx, ly, lw, lh);
