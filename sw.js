@@ -1,4 +1,4 @@
-const CACHE_NAME = 'onclicksolutions-v4';
+const CACHE_NAME = 'onclicksolutions-v5';
 const urlsToCache = [
   '/onclicksolutions/',
   '/onclicksolutions/index.html'
@@ -27,12 +27,28 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(fetch(event.request));
     return;
   }
-  // Cache first for static assets, network fallback
+  // Network first for HTML pages — always get latest
+  if (url.includes('/onclicksolutions/') || url.endsWith('index.html')) {
+    event.respondWith(
+      fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+  // Cache first for other static assets
   event.respondWith(
     caches.match(event.request).then(function(response) {
       if (response) return response;
       return fetch(event.request).then(function(networkResponse) {
-        // Cache new resources
         if (networkResponse && networkResponse.status === 200) {
           var responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(function(cache) {
