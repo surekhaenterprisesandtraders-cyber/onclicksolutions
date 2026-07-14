@@ -1608,7 +1608,7 @@ function renderDashboard() {
   // Load invoices for this user
   loadUserInvoices();
 
-  db.collection('applications').where('userId','==', currentUser.id)
+  db.collection('applications').where('userId','==', currentUser.id).orderBy('createdAt','desc')
     .onSnapshot(function(snap) {
     var myApps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
 
@@ -2529,6 +2529,7 @@ function applyAdminFilters() {
     }
     return true;
   });
+  filtered.sort(function(a,b){ var ta=a.createdAt&&a.createdAt.toDate?a.createdAt.toDate():new Date(a.createdAt||0); var tb=b.createdAt&&b.createdAt.toDate?b.createdAt.toDate():new Date(b.createdAt||0); return tb-ta; });
   renderAdminList(filtered);
 }
 
