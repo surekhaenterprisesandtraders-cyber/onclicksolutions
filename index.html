@@ -3451,9 +3451,12 @@ async function downloadInvoicePDF(invoice) {
       });
     } catch(e) { logoBase64 = null; }
 
-    // Logo image (left side)
+    // Logo image (left side) with white border
     if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', margin + 4, 13, 28, 28);
+      var lx = margin + 4, ly = 13, lw = 28, lh = 28, lp = 2;
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
+      doc.addImage(logoBase64, 'PNG', lx, ly, lw, lh);
     }
 
     // Brand name - website style (right of logo)
@@ -3890,7 +3893,10 @@ async function downloadReceiptFromApp(app) {
     // Logo image (left side of header)
     if (logoDataURL) {
       try {
-        doc.addImage(logoDataURL, 'PNG', margin + 4, 14, 22, 22);
+        var lx = margin + 4, ly = 14, lw = 22, lh = 22, lp = 2;
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
+        doc.addImage(logoDataURL, 'PNG', lx, ly, lw, lh);
       } catch(e) {}
     }
 
