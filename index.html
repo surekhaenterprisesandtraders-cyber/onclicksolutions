@@ -3453,7 +3453,7 @@ async function downloadInvoicePDF(invoice) {
 
     // Logo image (left side) with white border
     if (logoBase64) {
-      var lx = margin + 4, ly = 13, lw = 28, lh = 28, lp = 2;
+      var lx = margin + 4, ly = 13, lw = 28, lh = 28, lp = 0.25;
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
       doc.addImage(logoBase64, 'PNG', lx, ly, lw, lh);
@@ -3893,7 +3893,7 @@ async function downloadReceiptFromApp(app) {
     // Logo image (left side of header)
     if (logoDataURL) {
       try {
-        var lx = margin + 4, ly = 14, lw = 22, lh = 22, lp = 2;
+        var lx = margin + 4, ly = 14, lw = 22, lh = 22, lp = 0.25;
         doc.setFillColor(255, 255, 255);
         doc.roundedRect(lx - lp, ly - lp, lw + lp*2, lh + lp*2, 3, 3, 'F');
         doc.addImage(logoDataURL, 'PNG', lx, ly, lw, lh);
