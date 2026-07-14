@@ -3831,7 +3831,28 @@ function downloadCertificate(app) {
   }
 }
 
-function downloadReceiptFromApp(app) {
+function loadImageAsDataURL(url) {
+  return new Promise(function(resolve) {
+    try {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch(e) { resolve(null); }
+      };
+      img.onerror = function() { resolve(null); };
+      img.src = url;
+    } catch(e) { resolve(null); }
+  });
+}
+
+async function downloadReceiptFromApp(app) {
   try {
     var jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     if (!jsPDF) {
@@ -3839,34 +3860,53 @@ function downloadReceiptFromApp(app) {
       console.error('jsPDF not found. window.jspdf:', window.jspdf, 'window.jsPDF:', window.jsPDF);
       return;
     }
+    // Preload logo
+    var logoDataURL = await loadImageAsDataURL('https://2rz0648lib.ucarecd.net/1847cbfe-8a8c-4651-b257-13f098e8edf8/ONCLogo.png');
+
     var doc = new jsPDF({ unit: 'mm', format: 'a4' });
     var pageW = doc.internal.pageSize.getWidth();
     var margin = 18;
     var y = 0;
 
     // Header
+    var headerH = 34;
     doc.setFillColor(26, 86, 219);
-    doc.roundedRect(margin, 10, pageW - margin*2, 28, 4, 4, 'F');
+    doc.roundedRect(margin, 10, pageW - margin*2, headerH, 4, 4, 'F');
+
+    // Logo image (left side of header)
+    if (logoDataURL) {
+      try {
+        doc.addImage(logoDataURL, 'PNG', margin + 4, 14, 22, 22);
+      } catch(e) {}
+    }
+
     doc.setTextColor(255,255,255);
     doc.setFontSize(16); doc.setFont('helvetica','bold');
-    doc.text('On Click Solutions', pageW/2, 21, {align:'center'});
+    doc.text('On Click Solutions', pageW/2 + 8, 23, {align:'center'});
     doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.text('Government & Business Services | Mumbai', pageW/2, 28, {align:'center'});
-    doc.text('WhatsApp: +91 97271 38236', pageW/2, 34, {align:'center'});
+    doc.text('Government & Business Services | Mumbai', pageW/2 + 8, 30, {align:'center'});
+    doc.text('WhatsApp: +91 97271 38236', pageW/2 + 8, 37, {align:'center'});
 
-    y = 46;
+    y = 50;
     doc.setTextColor(30,30,60);
     doc.setFontSize(14); doc.setFont('helvetica','bold');
     doc.text('Application Receipt', pageW/2, y, {align:'center'});
-    y += 7;
+    y += 8;
 
     // Status badge
-    var sc = app.status==='Completed' ? [5,150,105] : app.status==='In Progress' ? [217,119,6] : [107,114,128];
+    var sc = app.status==='Completed' ? [5,150,105] : app.status==='In Progress' ? [217,119,6] : app.status==='Rejected' ? [220,38,38] : [107,114,128];
     doc.setFillColor(sc[0],sc[1],sc[2]);
-    doc.roundedRect(pageW/2-22, y, 44, 8, 3, 3, 'F');
+    doc.roundedRect(pageW/2-28, y, 56, 9, 3, 3, 'F');
     doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(app.status||'Pending', pageW/2, y+5.5, {align:'center'});
-    y += 16;
+    doc.text(app.status||'Pending', pageW/2, y+6, {align:'center'});
+    y += 18;
+
+    // Helper: split long text into lines that fit within value column width
+    var valueColW = pageW - margin*2 - 60; // 60mm for label col
+    function getWrappedLines(text, fontSize) {
+      doc.setFontSize(fontSize || 9);
+      return doc.splitTextToSize(String(text), valueColW);
+    }
 
     // Table
     var rows = [
@@ -3883,18 +3923,42 @@ function downloadReceiptFromApp(app) {
     if (app.remark) rows.push(['Remark', app.remark]);
 
     var tableStartY = y;
+    var lineH = 5.5; // line height within multiline rows
+    var rowPadT = 3; // top padding
+    var rowPadB = 3; // bottom padding
+
     rows.forEach(function(row, i) {
+      var isQuote = row[0] === 'Quoted Amount';
+      var valueFontSize = isQuote ? 10 : 9;
+      var wrappedLines = getWrappedLines(row[1], valueFontSize);
+      var rowH = rowPadT + (wrappedLines.length * lineH) + rowPadB;
+      if (rowH < 9) rowH = 9;
+
+      // Check if new page needed
+      if (y + rowH > doc.internal.pageSize.getHeight() - 20) {
+        doc.addPage();
+        y = 15;
+        tableStartY = y;
+      }
+
       doc.setFillColor(i%2===0 ? 249 : 255, i%2===0 ? 250 : 255, i%2===0 ? 251 : 255);
-      doc.rect(margin, y, pageW-margin*2, 9, 'F');
+      doc.rect(margin, y, pageW-margin*2, rowH, 'F');
+
+      // Label
       doc.setTextColor(55,65,81); doc.setFontSize(9); doc.setFont('helvetica','bold');
-      doc.text(row[0], margin+3, y+6);
-      if (row[0]==='Quoted Amount') {
+      doc.text(row[0], margin+3, y + rowPadT + lineH - 1);
+
+      // Value (multiline)
+      if (isQuote) {
         doc.setTextColor(5,150,105); doc.setFont('helvetica','bold'); doc.setFontSize(10);
       } else {
         doc.setTextColor(17,24,39); doc.setFont('helvetica','normal'); doc.setFontSize(9);
       }
-      doc.text(String(row[1]), margin+58, y+6);
-      y += 9;
+      wrappedLines.forEach(function(line, li) {
+        doc.text(line, margin+60, y + rowPadT + lineH - 1 + (li * lineH));
+      });
+
+      y += rowH;
     });
     doc.setDrawColor(229,231,235);
     doc.rect(margin, tableStartY, pageW-margin*2, y-tableStartY);
