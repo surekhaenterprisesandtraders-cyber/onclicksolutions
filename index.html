@@ -327,7 +327,8 @@ if ('serviceWorker' in navigator) {
   .dashboard-header h2 { font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; }
   .dashboard-header p { font-size:13px; opacity:.75; margin-top:3px; }
   .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; padding:24px; max-width:1100px; margin:0 auto; }
-  .dash-card { background:var(--white); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .dash-card { background:var(--white); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--border); transition:box-shadow 0.15s, transform 0.15s; }
+  .dash-card[onclick]:hover { box-shadow:0 4px 16px rgba(26,86,219,0.15); transform:translateY(-2px); border-color:#1a56db; }
   .dash-card .dash-num { font-family:'Poppins',sans-serif; font-size:28px; font-weight:800; color:var(--primary); }
   .dash-card .dash-label { font-size:13px; color:var(--gray); margin-top:4px; }
   .applications-list { max-width:1100px; margin:0 auto; padding:0 24px 40px; }
@@ -734,10 +735,10 @@ if ('serviceWorker' in navigator) {
     <p>Manage and update client enquiries</p>
   </div>
   <div class="dash-grid" style="grid-template-columns:repeat(5,1fr);">
-    <div class="dash-card"><div class="dash-num" id="adminTotal">0</div><div class="dash-label">Total Applications</div></div>
-    <div class="dash-card"><div class="dash-num" id="adminPending">0</div><div class="dash-label">Pending</div></div>
-    <div class="dash-card"><div class="dash-num" id="adminProgress">0</div><div class="dash-label">In Progress</div></div>
-    <div class="dash-card"><div class="dash-num" id="adminDone">0</div><div class="dash-label">Completed</div></div>
+    <div class="dash-card" onclick="adminFilterByStatus('')" style="cursor:pointer;" title="Show All"><div class="dash-num" id="adminTotal">0</div><div class="dash-label">Total Applications</div></div>
+    <div class="dash-card" onclick="adminFilterByStatus('Pending')" style="cursor:pointer;" title="Show Pending"><div class="dash-num" id="adminPending" style="color:#d97706;">0</div><div class="dash-label">Pending</div></div>
+    <div class="dash-card" onclick="adminFilterByStatus('In Progress')" style="cursor:pointer;" title="Show In Progress"><div class="dash-num" id="adminProgress" style="color:#1a56db;">0</div><div class="dash-label">In Progress</div></div>
+    <div class="dash-card" onclick="adminFilterByStatus('Completed')" style="cursor:pointer;" title="Show Completed"><div class="dash-num" id="adminDone" style="color:#059669;">0</div><div class="dash-label">Completed</div></div>
     <div class="dash-card" style="grid-column:span 1;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="dash-label" style="margin:0;">Revenue</div>
@@ -2503,6 +2504,17 @@ document.addEventListener('click', function(e) {
 
 // Store all apps for revenue filter
 var _allAdminApps = [];
+
+function adminFilterByStatus(status) {
+  document.getElementById('filterStatus').value = status;
+  document.getElementById('filterService').value = '';
+  document.getElementById('filterDate').value = '';
+  document.getElementById('filterSearch').value = '';
+  applyAdminFilters();
+  // Scroll to list
+  var list = document.getElementById('adminList');
+  if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function applyAdminFilters() {
   var status = document.getElementById('filterStatus').value;
