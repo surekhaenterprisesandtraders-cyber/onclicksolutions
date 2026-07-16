@@ -1,7 +1,7 @@
-const CACHE_NAME = 'onclicksolutions-v5';
+const CACHE_NAME = 'onclicksolutions-v6';
 const urlsToCache = [
-  '/onclicksolutions/',
-  '/onclicksolutions/index.html'
+  '/',
+  '/index.html'
 ];
 
 self.addEventListener('install', function(event) {
@@ -28,7 +28,8 @@ self.addEventListener('fetch', function(event) {
     return;
   }
   // Network first for HTML pages — always get latest
-  if (url.includes('/onclicksolutions/') || url.endsWith('index.html')) {
+  if (new URL(url).origin === self.location.origin &&
+      (new URL(url).pathname === '/' || url.endsWith('index.html'))) {
     event.respondWith(
       fetch(event.request).then(function(networkResponse) {
         if (networkResponse && networkResponse.status === 200) {
@@ -39,7 +40,9 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        return caches.match(event.request);
+        return caches.match(event.request).then(function(response) {
+          return response || caches.match('/index.html');
+        });
       })
     );
     return;
@@ -57,7 +60,7 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        return caches.match('/onclicksolutions/index.html');
+        return caches.match('/index.html');
       });
     })
   );
@@ -79,3 +82,4 @@ self.addEventListener('activate', function(event) {
     ])
   );
 });
+
