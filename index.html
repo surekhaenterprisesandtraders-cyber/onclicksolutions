@@ -2038,6 +2038,8 @@ async function updateStatus(docId, status) {
           service_name: appData.service || '',
           sub_service: statusEmoji + ' Status updated to: ' + status,
           ref_id: appData.refId || '',
+          quote: appData.quote || '',
+          remark: appData.remark || '',
           notes: 'Login to your dashboard to check details.',
           date: new Date().toLocaleDateString('en-IN')
         });
@@ -2093,7 +2095,7 @@ async function sendQuoteNew(docId, service, name, phone, refId, email) {
     var remarkLine = remark ? ('\n\n\uD83D\uDCDD *Remark:* ' + remark) : '';
     var msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
     window.open('https://wa.me/91' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
-    if (email) sendQuoteEmail(email, name, service, refId, quote, phone);
+    if (email) sendQuoteEmail(email, name, service, refId, quote, phone, remark);
     showToast('Quote sent via WhatsApp! \u2705', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
@@ -2294,7 +2296,7 @@ async function sendEmailNotification(appData) {
   } catch(e) { console.log('Admin email failed:', e); }
 }
 
-async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone) {
+async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone, remark) {
   try {
     // Client notification - old template with {{client_email}} as To
     await emailjs.send("service_ybsphno", "template_1eqx68r", {
@@ -2304,6 +2306,8 @@ async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, cl
       service_name: service,
       sub_service: '💰 Quote: ₹' + quote,
       ref_id: refId,
+      quote: quote,
+      remark: remark || '',
       notes: 'Your quote has been sent. Please login to your dashboard to make payment.',
       date: new Date().toLocaleDateString('en-IN')
     });
