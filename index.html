@@ -3970,10 +3970,18 @@ async function downloadReceiptFromApp(app) {
     y += 18;
 
     // Helper: split long text into lines that fit within value column width
-    var valueColW = pageW - margin*2 - 60; // 60mm for label col
+    var valueColW = pageW - margin*2 - 60 - 4; // 60mm for label col, small safety buffer
     function getWrappedLines(text, fontSize) {
       doc.setFontSize(fontSize || 9);
       return doc.splitTextToSize(String(text), valueColW);
+    }
+    // Get ACTUAL line height for a given font size, straight from jsPDF's own
+    // font metrics — this is exactly what jsPDF uses to render, so height
+    // always matches the real text regardless of how many lines it wraps to.
+    function getLineHeight(fontSize) {
+      doc.setFontSize(fontSize || 9);
+      var dim = doc.getTextDimensions('Mg'); // sample with ascender+descender
+      return dim.h * 1.25; // +25% for comfortable line spacing
     }
 
     // Table
@@ -3991,14 +3999,14 @@ async function downloadReceiptFromApp(app) {
     if (app.remark) rows.push(['Remark', app.remark]);
 
     var tableStartY = y;
-    var lineH = 5.5; // line height within multiline rows
-    var rowPadT = 3; // top padding
-    var rowPadB = 3; // bottom padding
+    var rowPadT = 4; // top padding
+    var rowPadB = 4; // bottom padding
 
     rows.forEach(function(row, i) {
       var isQuote = row[0] === 'Quoted Amount';
       var valueFontSize = isQuote ? 10 : 9;
       var wrappedLines = getWrappedLines(row[1], valueFontSize);
+      var lineH = getLineHeight(valueFontSize); // actual height for THIS row's font size
       var rowH = rowPadT + (wrappedLines.length * lineH) + rowPadB;
       if (rowH < 9) rowH = 9;
 
