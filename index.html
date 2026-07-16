@@ -3112,45 +3112,45 @@ function showUserApplications(user) {
   list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;">Loading...</div>';
 
   function renderApps(apps) {
-    if (apps.length === 0) {
+    // De-duplicate by docId (in case matched by multiple criteria)
+    var seen = {};
+    var unique = [];
+    apps.forEach(function(a) {
+      if (!seen[a.docId]) { seen[a.docId] = true; unique.push(a); }
+    });
+    if (unique.length === 0) {
       list.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:40px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:600;color:var(--dark);">No applications found</div><div style="font-size:13px;color:var(--gray);margin-top:6px;">This user has not submitted any applications yet.</div></div>';
       return;
     }
     // Sort newest first (handles docs with missing/pending createdAt too)
-    apps.sort(function(a, b) {
+    unique.sort(function(a, b) {
       var ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
       var tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
       return tb - ta;
     });
     list.innerHTML = '';
-    renderAdminListInto(apps, list);
+    renderAdminListInto(unique, list);
   }
 
-  // Primary query: where + orderBy (needs composite index, skips docs missing createdAt)
-  db.collection('applications').where('userId', '==', user.id).orderBy('createdAt', 'desc').get()
-    .then(function(snap) {
-      var apps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
-      // Fallback if primary query returns nothing — try without orderBy
-      // (catches docs where createdAt is missing/null and thus excluded above)
-      if (apps.length === 0) {
-        return db.collection('applications').where('userId', '==', user.id).get()
-          .then(function(snap2) {
-            var apps2 = snap2.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
-            renderApps(apps2);
-          });
-      }
+  // Match applications by userId (account used to submit) AND by phone/email
+  // (covers cases where someone else's account was used to submit on this user's behalf)
+  var queries = [];
+  queries.push(db.collection('applications').where('userId', '==', user.id).get());
+  if (user.phone) queries.push(db.collection('applications').where('phone', '==', user.phone).get());
+  if (user.email) queries.push(db.collection('applications').where('email', '==', user.email).get());
+
+  Promise.all(queries)
+    .then(function(snaps) {
+      var apps = [];
+      snaps.forEach(function(snap) {
+        snap.docs.forEach(function(d) {
+          apps.push(Object.assign({}, d.data(), { docId: d.id }));
+        });
+      });
       renderApps(apps);
     })
     .catch(function(e) {
-      // Primary query failed (e.g. missing index) — fallback to simple where query
-      db.collection('applications').where('userId', '==', user.id).get()
-        .then(function(snap2) {
-          var apps2 = snap2.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
-          renderApps(apps2);
-        })
-        .catch(function(e2) {
-          list.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:16px 0;">Error: ' + e2.message + '</div>';
-        });
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:16px 0;">Error: ' + e.message + '</div>';
     });
 }
 
