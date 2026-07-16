@@ -2093,7 +2093,7 @@ async function sendQuoteNew(docId, service, name, phone, refId, email) {
     var remarkLine = remark ? ('\n\n\uD83D\uDCDD *Remark:* ' + remark) : '';
     var msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
     window.open('https://wa.me/91' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
-    if (email) sendQuoteEmail(email, name, service, refId, quote);
+    if (email) sendQuoteEmail(email, name, service, refId, quote, phone);
     showToast('Quote sent via WhatsApp! \u2705', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
@@ -2294,12 +2294,12 @@ async function sendEmailNotification(appData) {
   } catch(e) { console.log('Admin email failed:', e); }
 }
 
-async function sendQuoteEmail(clientEmail, clientName, service, refId, quote) {
+async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone) {
   try {
     // Client notification - old template with {{client_email}} as To
     await emailjs.send("service_ybsphno", "template_1eqx68r", {
       client_name: clientName,
-      client_phone: '',
+      client_phone: clientPhone || '',
       client_email: clientEmail,
       service_name: service,
       sub_service: '💰 Quote: ₹' + quote,
