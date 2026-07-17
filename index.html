@@ -2035,7 +2035,7 @@ async function updateStatus(docId, status) {
       var appData = appDoc.data();
       if (appData && appData.email) {
         var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : status === 'Rejected' ? '❌' : '🕐';
-        emailjs.send('service_ybsphno', 'template_1eqx68r', {
+        await emailjs.send('service_ybsphno', 'template_1eqx68r', {
           client_name: appData.name || 'Customer',
           client_phone: appData.phone || '',
           client_email: appData.email,
@@ -2047,8 +2047,13 @@ async function updateStatus(docId, status) {
           notes: 'Login to your dashboard to check details.',
           date: new Date().toLocaleDateString('en-IN')
         });
+      } else {
+        showToast('⚠️ No email on file — client not notified', 'error');
       }
-    } catch(emailErr) { console.log('Email notification failed:', emailErr); }
+    } catch(emailErr) {
+      console.log('Email notification failed:', emailErr);
+      showToast('⚠️ Status saved, but email to client failed!', 'error');
+    }
   } catch(e) { showToast('Update failed!', 'error'); }
 }
 
@@ -2103,7 +2108,7 @@ async function sendQuoteNew(docId, service, name, phone, refId, email) {
     var remarkLine = remark ? ('\n\n\uD83D\uDCDD *Remark:* ' + remark) : '';
     var msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
     window.open('https://wa.me/91' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
-    if (email) sendQuoteEmail(email, name, service, refId, quote, phone, remark);
+    if (email) await sendQuoteEmail(email, name, service, refId, quote, phone, remark);
     showToast('Quote sent via WhatsApp! \u2705', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
@@ -2319,7 +2324,10 @@ async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, cl
       notes: 'Your quote has been sent. Please login to your dashboard to make payment.',
       date: new Date().toLocaleDateString('en-IN')
     });
-  } catch(e) { console.log('Quote email failed:', e); }
+  } catch(e) {
+    console.log('Quote email failed:', e);
+    showToast('⚠️ WhatsApp sent, but email to client failed!', 'error');
+  }
 }
 
 function showScreen(name) {
