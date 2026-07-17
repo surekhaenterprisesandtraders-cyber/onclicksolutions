@@ -753,6 +753,7 @@ if ('serviceWorker' in navigator) {
     <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
     <button onclick="showAdminInvoices()" style="padding:8px 14px;background:#1a56db;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📋 View All Invoices</button>
     <button onclick="showAdminUsers()" style="padding:8px 14px;background:#0891b2;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">👥 All Users</button>
+    <button onclick="showRecycleBin()" style="padding:8px 14px;background:#4b5563;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;position:relative;">🗑️ Recycle Bin <span id="recycleBinBadge" style="display:none;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;">0</span></button>
   </div>
   <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
@@ -786,9 +787,36 @@ if ('serviceWorker' in navigator) {
     </div>
     <div id="userAppsList"></div>
   </div>
+
+  <!-- RECYCLE BIN PANEL -->
+  <div id="recycleBinPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;">
+      <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">🗑️ Recycle Bin</div>
+      <button onclick="closeAdminPanel('recycleBinPanel')" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:16px;">Deleted applications stay here for safety. Permanent deletion requires an OTP sent to the admin email.</div>
+    <div id="recycleBinList"></div>
+  </div>
 </div>
 
-<!-- AUTH MODAL -->
+<!-- OTP DELETE MODAL -->
+<div class="modal-overlay" id="otpDeleteModal" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <h3>🔐 Verify OTP</h3>
+      <p>Enter the OTP sent to the admin email to confirm permanent deletion.</p>
+      <button class="modal-close" onclick="closeOtpDeleteModal()">&#10005;</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div id="otpDeleteTarget" style="font-size:13px;color:var(--gray);margin-bottom:14px;text-align:center;"></div>
+      <input id="otpDeleteInput" type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP"
+        style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;letter-spacing:6px;text-align:center;font-weight:700;box-sizing:border-box;margin-bottom:10px;">
+      <div id="otpDeleteError" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:10px;"></div>
+      <button onclick="verifyOtpAndDelete()" style="width:100%;background:#dc2626;color:white;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">🗑️ Confirm Permanent Delete</button>
+      <button onclick="resendDeleteOtp()" style="width:100%;background:none;border:none;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;padding:6px;">Resend OTP</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
@@ -1579,7 +1607,7 @@ function renderDashboard() {
 
   db.collection('applications').where('userId','==', currentUser.id).orderBy('createdAt','desc')
     .onSnapshot(function(snap) {
-    var myApps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
+    var myApps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); }).filter(function(a){ return !a.deleted; });
 
 
     var pending = myApps.filter(function(a){ return a.status==='Pending'; }).length;
@@ -1724,8 +1752,16 @@ function renderDashboard() {
 function renderAdmin() {
   document.getElementById('adminList').innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>';
   db.collection('applications').orderBy('createdAt','desc').onSnapshot(function(snap) {
-    var apps = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
+    var allDocs = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
+    var apps = allDocs.filter(function(a) { return !a.deleted; });
     _allAdminApps = apps;
+    _allDeletedApps = allDocs.filter(function(a) { return a.deleted; });
+    // Update recycle bin badge
+    var badge = document.getElementById('recycleBinBadge');
+    if (badge) {
+      if (_allDeletedApps.length > 0) { badge.style.display = 'inline-block'; badge.textContent = _allDeletedApps.length; }
+      else { badge.style.display = 'none'; }
+    }
     document.getElementById('adminTotal').textContent = apps.length;
     document.getElementById('adminPending').textContent = apps.filter(function(a){ return a.status==='Pending'; }).length;
     document.getElementById('adminProgress').textContent = apps.filter(function(a){ return a.status==='In Progress'; }).length;
@@ -1733,7 +1769,6 @@ function renderAdmin() {
     var revenueEl = document.getElementById('adminRevenue');
     if (revenueEl) revenueEl.textContent = '₹0';
     updateRevenueFilter();
-
     renderAdminList(apps);
   }, function(err) { console.error('Admin error:', err); });
 }
@@ -2017,11 +2052,15 @@ async function updateStatus(docId, status) {
 }
 
 async function deleteApplication(docId, name, service) {
-  if (!confirm('Delete application of ' + name + ' for ' + service + '? This cannot be undone!')) return;
+  if (!confirm('Move "' + name + ' — ' + service + '" to Recycle Bin?')) return;
   try {
-    await db.collection('applications').doc(docId).delete();
-    showToast('Application deleted!', 'success');
-  } catch(e) { showToast('Delete failed!', 'error'); }
+    await db.collection('applications').doc(docId).update({
+      deleted: true,
+      deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      deletedBy: (currentUser && currentUser.email) || 'admin'
+    });
+    showToast('Moved to Recycle Bin 🗑️', 'success');
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
 }
 
 async function markPaymentReceived(docId, clientName, action) {
@@ -2476,6 +2515,7 @@ document.addEventListener('click', function(e) {
 
 // Store all apps for revenue filter
 var _allAdminApps = [];
+var _allDeletedApps = [];
 
 function adminFilterByStatus(status) {
   document.getElementById('filterStatus').value = status;
@@ -3071,7 +3111,163 @@ function closeAdminPanel(panelId) {
   document.getElementById('adminList').style.display = 'block';
 }
 
-var _allAdminUsers = [];
+// ===== RECYCLE BIN =====
+var _otpDeleteCode = null;
+var _otpDeleteDocId = null;
+var _otpDeleteName = null;
+
+function showRecycleBin() {
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('adminList').style.display = 'none';
+  var panel = document.getElementById('recycleBinPanel');
+  panel.style.display = 'block';
+  var list = document.getElementById('recycleBinList');
+
+  if (_allDeletedApps.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">🗑️</div><div style="font-size:15px;font-weight:600;color:var(--dark);">Recycle Bin is empty</div><div style="font-size:13px;color:var(--gray);margin-top:6px;">Deleted applications will appear here.</div></div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  _allDeletedApps.forEach(function(app) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:white;border:1.5px solid #fee2e2;border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;';
+
+    var deletedDate = '';
+    if (app.deletedAt && app.deletedAt.toDate) {
+      deletedDate = app.deletedAt.toDate().toLocaleDateString('en-IN');
+    }
+
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0;';
+    info.innerHTML =
+      '<div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px;">' + (app.service || 'Unknown Service') + '</div>' +
+      '<div style="font-size:12px;color:var(--gray);">👤 ' + (app.name || '') + ' &nbsp;|&nbsp; 📅 ' + (app.date || '') + ' &nbsp;|&nbsp; Ref: ' + (app.refId || '') + '</div>' +
+      (deletedDate ? '<div style="font-size:11px;color:#dc2626;margin-top:3px;">🗑️ Deleted on ' + deletedDate + '</div>' : '');
+
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:8px;flex-shrink:0;';
+
+    var restoreBtn = document.createElement('button');
+    restoreBtn.textContent = '↩️ Restore';
+    restoreBtn.style.cssText = 'padding:7px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+    restoreBtn.onclick = (function(docId, name) {
+      return function() { restoreApplication(docId, name); };
+    })(app.docId, app.name);
+
+    var permDelBtn = document.createElement('button');
+    permDelBtn.textContent = '🗑️ Delete Forever';
+    permDelBtn.style.cssText = 'padding:7px 14px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+    permDelBtn.onclick = (function(docId, name, service) {
+      return function() { initiateOtpDelete(docId, name, service); };
+    })(app.docId, app.name, app.service);
+
+    btns.appendChild(restoreBtn);
+    btns.appendChild(permDelBtn);
+    card.appendChild(info);
+    card.appendChild(btns);
+    list.appendChild(card);
+  });
+}
+
+async function restoreApplication(docId, name) {
+  if (!confirm('Restore "' + name + '" back to applications?')) return;
+  try {
+    await db.collection('applications').doc(docId).update({
+      deleted: firebase.firestore.FieldValue.delete(),
+      deletedAt: firebase.firestore.FieldValue.delete(),
+      deletedBy: firebase.firestore.FieldValue.delete()
+    });
+    showToast('Application restored! ✅', 'success');
+    showRecycleBin(); // refresh
+  } catch(e) { showToast('Restore failed: ' + e.message, 'error'); }
+}
+
+async function initiateOtpDelete(docId, name, service) {
+  _otpDeleteDocId = docId;
+  _otpDeleteName = name + ' — ' + service;
+  // Generate 6-digit OTP
+  _otpDeleteCode = Math.floor(100000 + Math.random() * 900000).toString();
+  // Send OTP via EmailJS to admin
+  try {
+    await emailjs.send('service_ybsphno', 'template_twvayxl', {
+      to_email: 'surekhaenterprisesandtraders@gmail.com',
+      client_name: 'Admin',
+      client_email: 'surekhaenterprisesandtraders@gmail.com',
+      client_phone: '',
+      service_name: 'Recycle Bin — Permanent Delete OTP',
+      sub_service: 'Application: ' + _otpDeleteName,
+      ref_id: docId,
+      notes: 'Your OTP for permanently deleting this application is: ' + _otpDeleteCode + '\n\nThis OTP is valid for 5 minutes. Do NOT share this with anyone.',
+      date: new Date().toLocaleDateString('en-IN')
+    });
+    showToast('OTP sent to admin email! 📧', 'success');
+  } catch(e) {
+    showToast('Could not send OTP email. Check EmailJS config.', 'error');
+    console.error('OTP email failed:', e);
+    return;
+  }
+  // Show OTP modal
+  document.getElementById('otpDeleteTarget').textContent = 'Permanently deleting: ' + _otpDeleteName;
+  document.getElementById('otpDeleteInput').value = '';
+  document.getElementById('otpDeleteError').style.display = 'none';
+  var modal = document.getElementById('otpDeleteModal');
+  modal.style.display = 'flex';
+  setTimeout(function() { document.getElementById('otpDeleteInput').focus(); }, 100);
+  // OTP expires in 5 minutes
+  setTimeout(function() { _otpDeleteCode = null; }, 5 * 60 * 1000);
+}
+
+function closeOtpDeleteModal() {
+  document.getElementById('otpDeleteModal').style.display = 'none';
+  _otpDeleteCode = null;
+  _otpDeleteDocId = null;
+  _otpDeleteName = null;
+}
+
+async function verifyOtpAndDelete() {
+  var entered = document.getElementById('otpDeleteInput').value.trim();
+  var errEl = document.getElementById('otpDeleteError');
+  if (!entered || entered.length < 6) {
+    errEl.textContent = 'Please enter the 6-digit OTP.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!_otpDeleteCode) {
+    errEl.textContent = 'OTP expired. Please request a new one.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (entered !== _otpDeleteCode) {
+    errEl.textContent = 'Incorrect OTP. Please try again.';
+    errEl.style.display = 'block';
+    document.getElementById('otpDeleteInput').value = '';
+    document.getElementById('otpDeleteInput').focus();
+    return;
+  }
+  // OTP correct — permanently delete
+  try {
+    await db.collection('applications').doc(_otpDeleteDocId).delete();
+    showToast('Application permanently deleted! 🗑️', 'success');
+    closeOtpDeleteModal();
+    showRecycleBin(); // refresh bin
+  } catch(e) {
+    errEl.textContent = 'Delete failed: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function resendDeleteOtp() {
+  if (!_otpDeleteDocId) return;
+  var name = _otpDeleteName || 'Application';
+  document.getElementById('otpDeleteError').style.display = 'none';
+  document.getElementById('otpDeleteInput').value = '';
+  await initiateOtpDelete(_otpDeleteDocId, name.split(' — ')[0], name.split(' — ')[1] || '');
+}
+
+
 
 function showUserApplications(user) {
   document.getElementById('adminUsersPanel').style.display = 'none';
@@ -3088,7 +3284,7 @@ function showUserApplications(user) {
     var seen = {};
     var unique = [];
     apps.forEach(function(a) {
-      if (!seen[a.docId]) { seen[a.docId] = true; unique.push(a); }
+      if (!seen[a.docId] && !a.deleted) { seen[a.docId] = true; unique.push(a); }
     });
     if (unique.length === 0) {
       list.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:40px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:600;color:var(--dark);">No applications found</div><div style="font-size:13px;color:var(--gray);margin-top:6px;">This user has not submitted any applications yet.</div></div>';
@@ -4342,4 +4538,3 @@ init();
 
 </body>
 </html>
-
