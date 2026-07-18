@@ -2035,7 +2035,7 @@ async function updateStatus(docId, status) {
       var appData = appDoc.data();
       if (appData && appData.email) {
         var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : status === 'Rejected' ? '❌' : '🕐';
-        var quoteDisplay = appData.quote ? (appData.quote + (appData.paymentStatus === 'Paid' ? ' <span style="background:#059669;color:#ffffff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;">PAID</span>' : '')) : '';
+        var quoteDisplay = appData.quote ? (appData.quote + (appData.paymentStatus === 'Paid' ? '  ✅ PAID' : '')) : '';
         await emailjs.send('service_ybsphno', 'template_1eqx68r', {
           client_name: appData.name || 'Customer',
           client_phone: appData.phone || '',
@@ -2318,7 +2318,7 @@ async function sendEmailNotification(appData) {
 
 async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone, remark, isNewQuote, paymentStatus) {
   try {
-    var quoteDisplay = quote + (paymentStatus === 'Paid' ? ' <span style="background:#059669;color:#ffffff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;">PAID</span>' : '');
+    var quoteDisplay = quote + (paymentStatus === 'Paid' ? '  ✅ PAID' : '');
     var notesText = isNewQuote
       ? 'Your quote has been sent. Please login to your dashboard to make payment.'
       : 'Your application has been updated. Please check the details below.';
