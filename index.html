@@ -1884,7 +1884,7 @@ function renderAdminList(apps) {
       qBtn.className = 'btn btn-primary';
       qBtn.style.cssText = 'font-size:12px;padding:6px 14px;background:#059669;';
       qBtn.innerHTML = '📤 Send Quote';
-      qBtn.addEventListener('click', (function(app){ return function(){ sendQuoteNew(app.docId, app.service, app.name, app.phone, app.refId||'', app.email||''); }; })(a));
+      qBtn.addEventListener('click', (function(app){ return function(){ sendQuoteNew(app.docId, app.service, app.name, app.phone, app.refId||'', app.email||'', app.quote||'', app.paymentStatus||''); }; })(a));
 
       var delBtn = document.createElement('button');
       delBtn.className = 'btn btn-outline';
@@ -2035,6 +2035,7 @@ async function updateStatus(docId, status) {
       var appData = appDoc.data();
       if (appData && appData.email) {
         var statusEmoji = status === 'Completed' ? '✅' : status === 'In Progress' ? '⏳' : status === 'Rejected' ? '❌' : '🕐';
+        var quoteDisplay = appData.quote ? (appData.quote + (appData.paymentStatus === 'Paid' ? ' <span style="background:#059669;color:#ffffff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;">PAID</span>' : '')) : '';
         await emailjs.send('service_ybsphno', 'template_1eqx68r', {
           client_name: appData.name || 'Customer',
           client_phone: appData.phone || '',
@@ -2042,7 +2043,7 @@ async function updateStatus(docId, status) {
           service_name: appData.service || '',
           sub_service: statusEmoji + ' Status updated to: ' + status,
           ref_id: appData.refId || '',
-          quote: appData.quote || '',
+          quote: quoteDisplay,
           remark: appData.remark || '',
           notes: 'Login to your dashboard to check details.',
           date: new Date().toLocaleDateString('en-IN')
@@ -2094,22 +2095,28 @@ async function markPaymentReceived(docId, clientName, action) {
   }
 }
 
-async function sendQuoteNew(docId, service, name, phone, refId, email) {
+async function sendQuoteNew(docId, service, name, phone, refId, email, oldQuote, paymentStatus) {
   var amountInput = document.getElementById('amount-' + docId);
   var remarkInput = document.getElementById('remark-' + docId);
   var quote = amountInput ? amountInput.value.trim() : '';
   var remark = remarkInput ? remarkInput.value.trim() : '';
   if (!quote) { showToast('Please enter payment amount first!', 'error'); return; }
+  var isNewQuote = String(quote) !== String(oldQuote || ''); // true only if amount actually changed
   try {
     await db.collection('applications').doc(docId).update({
       quote: quote, remark: remark, paymentRequested: true,
       quoteSentAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     var remarkLine = remark ? ('\n\n\uD83D\uDCDD *Remark:* ' + remark) : '';
-    var msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
+    var msg;
+    if (isNewQuote) {
+      msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nYour enquiry for *' + service + '* (Ref: #' + refId + ') has been reviewed.\n\n\uD83D\uDCB0 *Payment Amount: \u20B9' + quote + '*' + remarkLine + '\n\nPlease login to your account to make the payment:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
+    } else {
+      msg = 'Hello ' + name + '! \uD83D\uDC4B\n\nAn update on your application for *' + service + '* (Ref: #' + refId + ').' + remarkLine + '\n\nCheck your dashboard for full details:\n\uD83C\uDF10 onclicksolutions.netlify.app\n\n\u2014 On Click Solutions';
+    }
     window.open('https://wa.me/91' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
-    if (email) await sendQuoteEmail(email, name, service, refId, quote, phone, remark);
-    showToast('Quote sent via WhatsApp! \u2705', 'success');
+    if (email) await sendQuoteEmail(email, name, service, refId, quote, phone, remark, isNewQuote, paymentStatus);
+    showToast((isNewQuote ? 'Quote' : 'Update') + ' sent via WhatsApp! \u2705', 'success');
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
@@ -2309,19 +2316,23 @@ async function sendEmailNotification(appData) {
   } catch(e) { console.log('Admin email failed:', e); }
 }
 
-async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone, remark) {
+async function sendQuoteEmail(clientEmail, clientName, service, refId, quote, clientPhone, remark, isNewQuote, paymentStatus) {
   try {
+    var quoteDisplay = quote + (paymentStatus === 'Paid' ? ' <span style="background:#059669;color:#ffffff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;">PAID</span>' : '');
+    var notesText = isNewQuote
+      ? 'Your quote has been sent. Please login to your dashboard to make payment.'
+      : 'Your application has been updated. Please check the details below.';
     // Client notification - old template with {{client_email}} as To
     await emailjs.send("service_ybsphno", "template_1eqx68r", {
       client_name: clientName,
       client_phone: clientPhone || '',
       client_email: clientEmail,
       service_name: service,
-      sub_service: '💰 Quote: ₹' + quote,
+      sub_service: isNewQuote ? ('💰 Quote: ₹' + quote) : '🔄 Application Updated',
       ref_id: refId,
-      quote: quote,
+      quote: quoteDisplay,
       remark: remark || '',
-      notes: 'Your quote has been sent. Please login to your dashboard to make payment.',
+      notes: notesText,
       date: new Date().toLocaleDateString('en-IN')
     });
   } catch(e) {
