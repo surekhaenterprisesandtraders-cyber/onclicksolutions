@@ -416,6 +416,19 @@ if ('serviceWorker' in navigator) {
     border:2px solid rgba(255,255,255,0.4); border-top-color:#fff;
     animation:loaderSpin 0.7s linear infinite; margin-right:7px; vertical-align:-2px;
   }
+
+  /* ===== NETWORK STATUS BANNER ===== */
+  .network-banner {
+    position:fixed; top:0; left:0; right:0; z-index:100000;
+    padding:10px 16px; text-align:center; font-size:13px; font-weight:600; color:white;
+    transform:translateY(-100%); transition:transform .3s ease;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .network-banner.show { transform:translateY(0); }
+  .network-banner.offline { background:#dc2626; }
+  .network-banner.online { background:#059669; }
+  .network-banner .dot { width:8px; height:8px; border-radius:50%; background:white; animation:dotPulse 1.4s ease infinite; }
+  @keyframes dotPulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
   .toast.show { transform:translateX(0); }
   .toast.success { border-left:4px solid var(--success); }
   .toast.error { border-left:4px solid var(--danger); }
@@ -1194,6 +1207,7 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<div class="network-banner" id="networkBanner"></div>
 <div class="toast" id="toast"></div>
 <div class="loader-overlay" id="loaderOverlay">
   <div class="loader-box">
@@ -1221,6 +1235,41 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Enable offline persistence — Firestore will cache data locally and
+// automatically queue/sync writes made while offline once back online.
+try {
+  db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+    if (err.code === 'failed-precondition') {
+      console.log('Offline persistence unavailable: multiple tabs open without sync support.');
+    } else if (err.code === 'unimplemented') {
+      console.log('Offline persistence not supported in this browser.');
+    }
+  });
+} catch(e) { console.log('Offline persistence setup skipped:', e); }
+
+// ===== NETWORK STATUS DETECTION =====
+var _wasOffline = false;
+function updateNetworkBanner(isOnline) {
+  var banner = document.getElementById('networkBanner');
+  if (!banner) return;
+  if (!isOnline) {
+    _wasOffline = true;
+    banner.className = 'network-banner offline show';
+    banner.innerHTML = '<span class="dot"></span> You\'re offline — some features may not work until you reconnect';
+  } else if (_wasOffline) {
+    banner.className = 'network-banner online show';
+    banner.innerHTML = '✅ Back online! Your data is syncing...';
+    setTimeout(function() {
+      banner.classList.remove('show');
+      _wasOffline = false;
+    }, 3000);
+  }
+}
+window.addEventListener('online', function() { updateNetworkBanner(true); });
+window.addEventListener('offline', function() { updateNetworkBanner(false); });
+// Check initial state on page load
+if (!navigator.onLine) updateNetworkBanner(false);
 
 // ===== PUSH NOTIFICATIONS (Firebase Cloud Messaging) =====
 // IMPORTANT: Replace 'YOUR_VAPID_KEY_HERE' below with your own key from:
@@ -1639,7 +1688,15 @@ async function submitApplication() {
   }
 
   var ref = 'OCS-' + Date.now().toString().slice(-5);
+
+  // File uploads need a live connection — Firestore writes can queue offline, but file uploads cannot.
+  if (!navigator.onLine && selectedFiles.length > 0) {
+    showToast('You\'re offline — please reconnect to upload files, or submit without attachments.', 'error');
+    return;
+  }
+
   showLoader('Submitting your application...', 'Please don\'t close this page');
+  if (!navigator.onLine) updateLoaderText('You\'re offline', 'Will submit automatically once reconnected');
 
   var fileURLs = [];
   if (selectedFiles.length > 0) {
@@ -1685,7 +1742,11 @@ async function submitApplication() {
     document.getElementById('fileInput').value = '';
   } catch(e) {
     hideLoader();
-    showToast('Error: ' + e.message, 'error');
+    if (e.code === 'unavailable' || !navigator.onLine) {
+      showToast('Network issue — your application will submit automatically once you\'re back online.', 'error');
+    } else {
+      showToast('Error: ' + e.message, 'error');
+    }
   }
 }
 
@@ -1713,7 +1774,14 @@ async function submitQuickApply() {
   var subSel = document.getElementById('qaSubService');
   var subService = service === 'Others' ? othersDesc : (subSel.value || '');
   var ref = 'OCS-' + Date.now().toString().slice(-5);
+
+  if (!navigator.onLine && selectedQAFiles.length > 0) {
+    showToast('You\'re offline — please reconnect to upload files, or submit without attachments.', 'error');
+    return;
+  }
+
   showLoader('Submitting your application...', 'Please don\'t close this page');
+  if (!navigator.onLine) updateLoaderText('You\'re offline', 'Will submit automatically once reconnected');
 
   var fileURLs = [];
   if (selectedQAFiles.length > 0) {
@@ -1752,7 +1820,11 @@ async function submitQuickApply() {
     document.getElementById('qaFileInput').value = '';
   } catch(e) {
     hideLoader();
-    showToast('Error: ' + e.message, 'error');
+    if (e.code === 'unavailable' || !navigator.onLine) {
+      showToast('Network issue — your application will submit automatically once you\'re back online.', 'error');
+    } else {
+      showToast('Error: ' + e.message, 'error');
+    }
   }
 }
 
@@ -4718,24 +4790,36 @@ async function uploadFilesToCloudinary(files, refId) {
   var uploaded = [];
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
-    try {
-      var formData = new FormData();
-      formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
-      formData.append('UPLOADCARE_STORE', '1');
-      formData.append('file', file);
-      var res = await fetch('https://upload.uploadcare.com/base/', {
-        method: 'POST',
-        body: formData
-      });
-      var data = await res.json();
-      if (data.file) {
-        var fileUUID = data.file;
-        var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-        var fileUrl = 'https://2rz0648lib.ucarecd.net/' + fileUUID + '/';
-        uploaded.push({ name: file.name, url: fileUrl, uuid: fileUUID, isPDF: isPDF });
+    var success = false;
+    var attempts = 0;
+    while (!success && attempts < 2) { // try up to 2 times per file
+      attempts++;
+      try {
+        var formData = new FormData();
+        formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
+        formData.append('UPLOADCARE_STORE', '1');
+        formData.append('file', file);
+        var res = await fetch('https://upload.uploadcare.com/base/', {
+          method: 'POST',
+          body: formData
+        });
+        var data = await res.json();
+        if (data.file) {
+          var fileUUID = data.file;
+          var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
+          var fileUrl = 'https://2rz0648lib.ucarecd.net/' + fileUUID + '/';
+          uploaded.push({ name: file.name, url: fileUrl, uuid: fileUUID, isPDF: isPDF });
+          success = true;
+        }
+      } catch(e) {
+        console.error('Upload attempt ' + attempts + ' failed:', file.name, e);
+        if (attempts < 2) {
+          await new Promise(function(resolve) { setTimeout(resolve, 1500); }); // brief pause before retry
+        }
       }
-    } catch(e) {
-      console.error('Upload failed:', file.name, e);
+    }
+    if (!success) {
+      showToast('Could not upload "' + file.name + '" — please check your connection.', 'error');
     }
   }
   return uploaded;
