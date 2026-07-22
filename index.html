@@ -1225,7 +1225,7 @@ const db = firebase.firestore();
 // ===== PUSH NOTIFICATIONS (Firebase Cloud Messaging) =====
 // IMPORTANT: Replace 'YOUR_VAPID_KEY_HERE' below with your own key from:
 // Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates -> Generate key pair
-const FCM_VAPID_KEY = 'BAdEWq-3hzF72x9B9-C44sdU8MLBdFh8t4JDorb4wT5C5dJqqyepETNW_XWSaT0yI9-XP0N9oj-30H0X0L20e6I';
+const FCM_VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
 var messaging = null;
 try {
   if (firebase.messaging.isSupported()) {
@@ -3195,18 +3195,22 @@ function renderTimeline(app) {
   container.appendChild(title);
 
   var stepsToShow = isRejected ? ['Pending', 'In Progress', 'Rejected'] : allSteps;
+  var currentIndex = stepsToShow.indexOf(app.status);
   var timelineWrap = document.createElement('div');
   timelineWrap.style.cssText = 'display:flex;align-items:flex-start;gap:0;';
 
   stepsToShow.forEach(function(step, i) {
-    var isDone = false;
-    var isCurrent = app.status === step;
+    // Only mark as done/reached if it's at or before the CURRENT status —
+    // prevents a status that was reached and later reverted (e.g. Completed -> In Progress)
+    // from permanently showing as checked in the timeline.
+    var isDone = currentIndex >= 0 && i <= currentIndex;
+    var isCurrent = i === currentIndex;
     var stepDate = '';
 
-    // Find from history
-    var histEntry = history.find(function(h) { return h.status === step; });
-    if (histEntry) { isDone = true; stepDate = histEntry.changedAt || ''; }
-    if (step === 'Pending' && !histEntry) { isDone = true; stepDate = app.date || ''; }
+    if (isDone) {
+      var histEntry = history.find(function(h) { return h.status === step; });
+      stepDate = (histEntry && histEntry.changedAt) || (step === 'Pending' ? (app.date || '') : '');
+    }
 
     var stepColor = isDone || isCurrent
       ? (step === 'Rejected' ? '#dc2626' : step === 'Completed' ? '#059669' : '#1a56db')
