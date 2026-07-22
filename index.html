@@ -1206,6 +1206,7 @@ if ('serviceWorker' in navigator) {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 
 const firebaseConfig = {
@@ -1220,6 +1221,68 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ===== PUSH NOTIFICATIONS (Firebase Cloud Messaging) =====
+// IMPORTANT: Replace 'YOUR_VAPID_KEY_HERE' below with your own key from:
+// Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates -> Generate key pair
+const FCM_VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+var messaging = null;
+try {
+  if (firebase.messaging.isSupported()) {
+    messaging = firebase.messaging();
+  }
+} catch(e) { console.log('FCM not supported in this browser:', e); }
+
+async function enablePushNotifications() {
+  if (!messaging || typeof Notification === 'undefined') { showToast('Push notifications not supported on this browser.', 'error'); return; }
+  if (!currentUser) { showToast('Please login first!', 'error'); return; }
+  try {
+    var permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showToast('Notification permission denied.', 'error');
+      return;
+    }
+    // Register the FCM service worker
+    var registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    var token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+    if (token) {
+      await db.collection('users').doc(currentUser.id).update({
+        fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+      });
+      localStorage.setItem('pushEnabled', 'true');
+      showToast('Notifications enabled! 🔔', 'success');
+      updatePushButtonUI();
+    }
+  } catch(e) {
+    console.error('Push setup failed:', e);
+    showToast('Could not enable notifications: ' + e.message, 'error');
+  }
+}
+
+function updatePushButtonUI() {
+  var btn = document.getElementById('enablePushBtn');
+  if (!btn) return;
+  if (typeof Notification === 'undefined') {
+    btn.textContent = 'Not supported on this browser';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    return;
+  }
+  if (Notification.permission === 'granted' && localStorage.getItem('pushEnabled') === 'true') {
+    btn.textContent = '🔔 Notifications On';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+  }
+}
+
+// Foreground messages (when tab is open) — show as an in-app toast
+if (messaging) {
+  messaging.onMessage(function(payload) {
+    var title = (payload.notification && payload.notification.title) || 'On Click Solutions';
+    var body = (payload.notification && payload.notification.body) || '';
+    showToast(title + (body ? ': ' + body : ''), 'success');
+  });
+}
 
 const SERVICES = {
   "Identity & Personal": {
@@ -2762,6 +2825,21 @@ function renderProfile() {
     avatarCard.appendChild(emailEl);
     avatarCard.appendChild(joinEl);
     container.appendChild(avatarCard);
+
+    // Notifications card
+    var notifCard = document.createElement('div');
+    notifCard.style.cssText = 'background:white;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+    var notifText = document.createElement('div');
+    notifText.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--dark);">🔔 Push Notifications</div><div style="font-size:12px;color:var(--gray);margin-top:3px;">Get notified instantly when your application status changes — even when the site is closed.</div>';
+    var notifBtn = document.createElement('button');
+    notifBtn.id = 'enablePushBtn';
+    notifBtn.style.cssText = 'padding:10px 18px;background:#1a56db;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;';
+    notifBtn.textContent = '🔔 Enable Notifications';
+    notifBtn.onclick = function() { enablePushNotifications(); };
+    notifCard.appendChild(notifText);
+    notifCard.appendChild(notifBtn);
+    container.appendChild(notifCard);
+    updatePushButtonUI();
 
     // Edit form card
     var formCard = document.createElement('div');
