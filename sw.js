@@ -15,7 +15,8 @@ self.addEventListener('install', function(event) {
 
 self.addEventListener('fetch', function(event) {
   var url = event.request.url;
-  // Never cache these — always fresh
+
+  // Never cache these — always fetch fresh (live data, third-party services)
   if (url.includes('firestore.googleapis.com') ||
       url.includes('firebase') ||
       url.includes('googleapis.com') ||
@@ -27,9 +28,9 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(fetch(event.request));
     return;
   }
-  // Network first for HTML pages — always get latest
-  if (new URL(url).origin === self.location.origin &&
-      (new URL(url).pathname === '/' || url.endsWith('index.html'))) {
+
+  // Network first for the main page — always get latest, fall back to cache/offline page
+  if (url.endsWith('/') || url.endsWith('/index.html') || url.includes('/#')) {
     event.respondWith(
       fetch(event.request).then(function(networkResponse) {
         if (networkResponse && networkResponse.status === 200) {
@@ -40,14 +41,19 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        return caches.match(event.request).then(function(response) {
-          return response || caches.match('/index.html');
+        // Offline — serve the last cached version of the app.
+        // Since it's a single-page app with client-side routing, the cached
+        // index.html still works fully for already-loaded data (Firestore
+        // offline persistence handles the rest once the page loads).
+        return caches.match('/index.html').then(function(cached) {
+          return cached || caches.match('/');
         });
       })
     );
     return;
   }
-  // Cache first for other static assets
+
+  // Cache first for other static assets (fonts, icons, etc.), network fallback
   event.respondWith(
     caches.match(event.request).then(function(response) {
       if (response) return response;
@@ -60,6 +66,7 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
+        // Last resort for navigation-like requests while fully offline
         return caches.match('/index.html');
       });
     })
@@ -82,4 +89,3 @@ self.addEventListener('activate', function(event) {
     ])
   );
 });
-
