@@ -808,7 +808,7 @@ if ('serviceWorker' in navigator) {
     <div class="dash-card" onclick="adminFilterByStatus('Pending')" style="cursor:pointer;" title="Show Pending" role="button" tabindex="0" aria-label="Show pending applications" onkeydown="if(event.key==='Enter')adminFilterByStatus('Pending')"><div class="dash-num" id="adminPending" style="color:#d97706;">0</div><div class="dash-label">Pending</div></div>
     <div class="dash-card" onclick="adminFilterByStatus('In Progress')" style="cursor:pointer;" title="Show In Progress" role="button" tabindex="0" aria-label="Show in-progress applications" onkeydown="if(event.key==='Enter')adminFilterByStatus('In Progress')"><div class="dash-num" id="adminProgress" style="color:#1a56db;">0</div><div class="dash-label">In Progress</div></div>
     <div class="dash-card" onclick="adminFilterByStatus('Completed')" style="cursor:pointer;" title="Show Completed" role="button" tabindex="0" aria-label="Show completed applications" onkeydown="if(event.key==='Enter')adminFilterByStatus('Completed')"><div class="dash-num" id="adminDone" style="color:#059669;">0</div><div class="dash-label">Completed</div></div>
-    <div class="dash-card" style="grid-column:span 1;">
+    <div class="dash-card" id="revenueCard" style="grid-column:span 1;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="dash-label" style="margin:0;">Revenue</div>
         <select id="revenueFilter" onchange="updateRevenueFilter()" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;color:var(--dark);cursor:pointer;">
@@ -850,12 +850,13 @@ if ('serviceWorker' in navigator) {
     <input type="date" id="filterDate" onchange="applyAdminFilters()" aria-label="Filter applications by date" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);cursor:pointer;background:white;flex-shrink:0;">
     <input type="text" id="filterSearch" oninput="applyAdminFilters()" placeholder="🔍 Search name / ref / phone / notes / service..." aria-label="Search applications" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:150px;max-width:100%;">
     <button onclick="clearAdminFilters()" style="padding:8px 14px;background:#f3f4f6;border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);flex-shrink:0;">✕ Clear</button>
-    <button onclick="exportToCSV()" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
+    <button onclick="exportToCSV()" id="btnExportCSV" style="padding:8px 14px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📥 Export CSV</button>
     <button onclick="generateInvoiceForSelected()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧾 Generate Invoice</button>
     <button onclick="showAdminInvoices()" style="padding:8px 14px;background:#1a56db;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📋 View All Invoices</button>
     <button onclick="showAdminUsers()" style="padding:8px 14px;background:#0891b2;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">👥 All Users</button>
-    <button onclick="showRecycleBin()" style="padding:8px 14px;background:#4b5563;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;position:relative;">🗑️ Recycle Bin <span id="recycleBinBadge" style="display:none;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;">0</span></button>
-    <button onclick="showAnalytics()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📊 Analytics</button>
+    <button onclick="showRecycleBin()" id="btnRecycleBin" style="padding:8px 14px;background:#4b5563;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;position:relative;">🗑️ Recycle Bin <span id="recycleBinBadge" style="display:none;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;">0</span></button>
+    <button onclick="showAnalytics()" id="btnAnalytics" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📊 Analytics</button>
+    <button onclick="showTeamManagement()" id="btnTeam" style="padding:8px 14px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧑‍💼 Team</button>
   </div>
   <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
@@ -925,6 +926,40 @@ if ('serviceWorker' in navigator) {
       <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">💰 Revenue by Month (last 6 months)</div>
       <canvas id="chartRevenue" style="max-height:280px;"></canvas>
     </div>
+  </div>
+
+  <!-- TEAM MANAGEMENT PANEL -->
+  <div id="teamPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;">
+      <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">🧑‍💼 Team Members</div>
+      <button onclick="closeAdminPanel('teamPanel')" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:20px;">Give an existing registered user Staff or Admin access. They must already have signed up with a regular account on the site before you can promote them.</div>
+
+    <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">➕ Grant Access</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:220px;">
+          <label class="form-label" for="teamEmailInput">Registered user's email</label>
+          <input class="form-input" id="teamEmailInput" type="email" placeholder="teammate@email.com">
+        </div>
+        <div style="min-width:160px;">
+          <label class="form-label" for="teamRoleSelect">Access level</label>
+          <select class="form-input" id="teamRoleSelect">
+            <option value="staff">Staff (limited)</option>
+            <option value="admin">Admin (full access)</option>
+          </select>
+        </div>
+        <button onclick="grantTeamAccess()" style="padding:11px 20px;background:#1a56db;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Grant Access</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray);margin-top:10px;line-height:1.6;">
+        <strong>Staff</strong> can view/update applications, chat with clients, and generate invoices.<br>
+        <strong>Admin</strong> additionally gets Recycle Bin, Analytics, Export CSV, and Team management.
+      </div>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">Current Team</div>
+    <div id="teamList"></div>
   </div>
 </div>
 
@@ -1452,26 +1487,34 @@ function init() {
 
 auth.onAuthStateChanged(async function(user) {
   if (user) {
-    var isAdmin = user.email === ADMIN_EMAIL;
+    var isPrimaryAdmin = user.email === ADMIN_EMAIL;
     currentUser = {
       id: user.uid,
       name: user.displayName || user.email.split('@')[0],
       email: user.email,
       phone: user.phoneNumber || '',
-      role: isAdmin ? 'admin' : 'client'
+      role: isPrimaryAdmin ? 'admin' : 'client'
     };
-    // Fetch phone from Firestore users collection
-    db.collection('users').doc(user.uid).get().then(function(snap) {
+    // Fetch role/phone/name from Firestore users collection (source of truth for staff/admin roles)
+    try {
+      var snap = await db.collection('users').doc(user.uid).get();
       if (snap.exists) {
         var d = snap.data();
         if (d.phone) currentUser.phone = d.phone;
         if (d.name) currentUser.name = d.name;
+        // Primary admin (ADMIN_EMAIL) is always 'admin' regardless of Firestore doc.
+        // Otherwise, honor the role set on their profile: 'admin', 'staff', or default 'client'.
+        if (!isPrimaryAdmin && (d.role === 'admin' || d.role === 'staff')) {
+          currentUser.role = d.role;
+        }
       }
-    }).catch(function(){});
+    } catch(e) { console.log('Role fetch failed:', e); }
+
     updateNav();
+    var isStaffOrAdmin = currentUser.role === 'admin' || currentUser.role === 'staff';
     // Restore page from URL hash on refresh
     var hash = window.location.hash.replace('#', '');
-    if (isAdmin) {
+    if (isStaffOrAdmin) {
       showScreen('admin'); renderAdmin();
     } else if (hash === 'dashboard') {
       showScreen('dashboard'); renderDashboard();
@@ -1509,11 +1552,11 @@ function updateNav() {
     navRight.appendChild(btnS);
     return;
   }
-  if (currentUser.role === 'admin') {
+  if (currentUser.role === 'admin' || currentUser.role === 'staff') {
     showBottomNav(false);
     var spanAdmin = document.createElement('span');
     spanAdmin.style.cssText = 'color:var(--gray);font-size:13px;';
-    spanAdmin.textContent = 'Admin';
+    spanAdmin.textContent = currentUser.role === 'admin' ? 'Admin' : 'Staff';
     var btnPanel = document.createElement('button');
     btnPanel.className = 'btn btn-primary';
     btnPanel.textContent = 'Admin Panel';
@@ -2012,7 +2055,22 @@ function renderDashboard() {
   });
 }
 
+function applyRoleBasedAdminUI() {
+  var isFullAdmin = currentUser && currentUser.role === 'admin';
+  var isPrimaryAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+  // Staff can view/update applications, chat, and generate invoices —
+  // but not export financial data, manage the recycle bin, view analytics, or manage the team.
+  ['btnExportCSV', 'btnRecycleBin', 'btnAnalytics', 'revenueCard'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = isFullAdmin ? '' : 'none';
+  });
+  // Team management is restricted to the primary admin account only, to avoid privilege-escalation chains.
+  var teamBtn = document.getElementById('btnTeam');
+  if (teamBtn) teamBtn.style.display = isPrimaryAdmin ? '' : 'none';
+}
+
 function renderAdmin() {
+  applyRoleBasedAdminUI();
   document.getElementById('adminList').innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>';
   db.collection('applications').orderBy('createdAt','desc').onSnapshot(function(snap) {
     var allDocs = snap.docs.map(function(d) { return Object.assign({}, d.data(), { docId: d.id }); });
@@ -2653,7 +2711,7 @@ window.addEventListener('popstate', function(e) {
     window.scrollTo({ top:0, behavior:'smooth' });
     // Re-render if needed
     if (e.state.screen === 'dashboard' && currentUser) renderDashboard();
-    if (e.state.screen === 'admin' && currentUser && currentUser.role === 'admin') renderAdmin();
+    if (e.state.screen === 'admin' && currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff')) renderAdmin();
   } else {
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
     document.getElementById('screen-home').classList.add('active');
@@ -3107,7 +3165,7 @@ function loadChatMessages(docId) {
       }
 
       // Mark as read
-      var isAdmin = currentUser && currentUser.role === 'admin';
+      var isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff');
       db.collection('chats').doc(docId).set({
         [isAdmin ? 'adminUnread' : 'clientUnread']: 0
       }, { merge: true });
@@ -3147,7 +3205,7 @@ async function sendChatMessage() {
   if (!text || !_chatDocId || !currentUser) return;
   input.value = '';
 
-  var isAdmin = currentUser.role === 'admin';
+  var isAdmin = currentUser.role === 'admin' || currentUser.role === 'staff';
   var sender = isAdmin ? 'admin' : 'client';
   var senderName = isAdmin ? 'Admin' : (currentUser.name || 'Client');
 
@@ -3175,7 +3233,7 @@ async function sendChatMessage() {
 var _notifUnsubscribe = null;
 
 function loadNotifications() {
-  if (!currentUser || currentUser.role === 'admin') return;
+  if (!currentUser || currentUser.role === 'admin' || currentUser.role === 'staff') return;
   if (_notifUnsubscribe) _notifUnsubscribe();
 
   _notifUnsubscribe = db.collection('applications')
@@ -3361,7 +3419,7 @@ function renderTimeline(app) {
 
 // ===== INVOICE SYSTEM =====
 function loadUserInvoices() {
-  if (!currentUser || currentUser.role === 'admin') return;
+  if (!currentUser || currentUser.role === 'admin' || currentUser.role === 'staff') return;
   var section = document.getElementById('invoicesSection');
   var invoiceList = document.getElementById('invoiceList');
   if (!section || !invoiceList) return;
@@ -3436,7 +3494,7 @@ function closeAdminPanel(panelId) {
 var _chartServices = null, _chartStatus = null, _chartRevenue = null;
 
 function showAnalytics() {
-  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','recycleBinPanel'].forEach(function(id) {
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','recycleBinPanel','teamPanel'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   document.getElementById('adminList').style.display = 'none';
@@ -3578,13 +3636,101 @@ function showAnalytics() {
   });
 }
 
+// ===== TEAM MANAGEMENT (primary admin only) =====
+function showTeamManagement() {
+  if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+    showToast('Only the primary admin account can manage the team.', 'error');
+    return;
+  }
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','recycleBinPanel','analyticsPanel'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('adminList').style.display = 'none';
+  document.getElementById('teamPanel').style.display = 'block';
+  loadTeamList();
+}
+
+function loadTeamList() {
+  var list = document.getElementById('teamList');
+  list.innerHTML = '<div style="color:var(--gray);font-size:13px;padding:16px 0;">Loading team...</div>';
+  db.collection('users').where('role', 'in', ['staff', 'admin']).get()
+    .then(function(snap) {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--gray);font-size:13px;">No staff or admin members yet. Grant access above to add your first team member.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      snap.forEach(function(doc) {
+        var u = doc.data();
+        var card = document.createElement('div');
+        card.style.cssText = 'background:white;border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;';
+        var roleBadgeColor = u.role === 'admin' ? '#7c3aed' : '#0891b2';
+        card.innerHTML =
+          '<div>' +
+            '<div style="font-size:14px;font-weight:700;color:var(--dark);">' + (u.name || 'Unnamed') + '</div>' +
+            '<div style="font-size:12px;color:var(--gray);margin-top:2px;">' + (u.email || '') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="background:' + roleBadgeColor + ';color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:capitalize;">' + u.role + '</span>' +
+          '</div>';
+        var revokeBtn = document.createElement('button');
+        revokeBtn.textContent = '🚫 Revoke Access';
+        revokeBtn.style.cssText = 'padding:7px 14px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+        revokeBtn.onclick = (function(uid, email) { return function() { revokeTeamAccess(uid, email); }; })(doc.id, u.email);
+        card.querySelector('div:last-child').appendChild(revokeBtn);
+        list.appendChild(card);
+      });
+    })
+    .catch(function(e) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;">Error loading team: ' + e.message + '</div>';
+    });
+}
+
+async function grantTeamAccess() {
+  var email = document.getElementById('teamEmailInput').value.trim().toLowerCase();
+  var role = document.getElementById('teamRoleSelect').value;
+  if (!email) { showToast('Please enter the user\'s email!', 'error'); return; }
+  if (email === ADMIN_EMAIL) { showToast('This account is already the primary admin.', 'error'); return; }
+
+  showLoader('Looking up user...');
+  try {
+    var snap = await db.collection('users').where('email', '==', email).limit(1).get();
+    if (snap.empty) {
+      hideLoader();
+      showToast('No registered account found with that email. They must sign up first.', 'error');
+      return;
+    }
+    var userDoc = snap.docs[0];
+    updateLoaderText('Granting ' + role + ' access...');
+    await db.collection('users').doc(userDoc.id).update({ role: role });
+    hideLoader();
+    showToast(userDoc.data().name + ' is now ' + (role === 'admin' ? 'an Admin' : 'a Staff member') + '! ✅', 'success');
+    document.getElementById('teamEmailInput').value = '';
+    loadTeamList();
+  } catch(e) {
+    hideLoader();
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function revokeTeamAccess(uid, email) {
+  if (!confirm('Revoke admin/staff access for ' + email + '? They will become a regular client account.')) return;
+  try {
+    await db.collection('users').doc(uid).update({ role: 'client' });
+    showToast('Access revoked.', 'success');
+    loadTeamList();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
 // ===== RECYCLE BIN =====
 var _otpDeleteCode = null;
 var _otpDeleteDocId = null;
 var _otpDeleteName = null;
 
 function showRecycleBin() {
-  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','analyticsPanel'].forEach(function(id) {
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','analyticsPanel','teamPanel'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   document.getElementById('adminList').style.display = 'none';
