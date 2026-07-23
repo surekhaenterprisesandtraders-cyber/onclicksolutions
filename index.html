@@ -162,6 +162,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 <script>emailjs.init("Fw4qKg-if_y80FNR1");</script>
 <script>
 // Language stubs (multilingual removed, English only)
@@ -854,6 +855,7 @@ if ('serviceWorker' in navigator) {
     <button onclick="showAdminInvoices()" style="padding:8px 14px;background:#1a56db;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📋 View All Invoices</button>
     <button onclick="showAdminUsers()" style="padding:8px 14px;background:#0891b2;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">👥 All Users</button>
     <button onclick="showRecycleBin()" style="padding:8px 14px;background:#4b5563;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;position:relative;">🗑️ Recycle Bin <span id="recycleBinBadge" style="display:none;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;">0</span></button>
+    <button onclick="showAnalytics()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📊 Analytics</button>
   </div>
   <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
@@ -896,6 +898,33 @@ if ('serviceWorker' in navigator) {
     </div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:16px;">Deleted applications stay here for safety. Permanent deletion requires an OTP sent to the admin email.</div>
     <div id="recycleBinList"></div>
+  </div>
+
+  <!-- ANALYTICS PANEL -->
+  <div id="analyticsPanel" style="display:none;padding:0 24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:700;color:var(--dark);">📊 Analytics</div>
+      <button onclick="closeAdminPanel('analyticsPanel')" style="background:#f3f4f6;border:1.5px solid var(--border);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--gray);">✕ Close</button>
+    </div>
+
+    <!-- Summary stat cards -->
+    <div id="analyticsStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;"></div>
+
+    <!-- Charts grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+      <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;">
+        <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">🏆 Most Applied Services</div>
+        <canvas id="chartServices" style="max-height:260px;"></canvas>
+      </div>
+      <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;">
+        <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">📈 Status Breakdown</div>
+        <canvas id="chartStatus" style="max-height:260px;"></canvas>
+      </div>
+    </div>
+    <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;">
+      <div style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;">💰 Revenue by Month (last 6 months)</div>
+      <canvas id="chartRevenue" style="max-height:280px;"></canvas>
+    </div>
   </div>
 </div>
 
@@ -3403,13 +3432,159 @@ function closeAdminPanel(panelId) {
   document.getElementById('adminList').style.display = 'block';
 }
 
+// ===== ANALYTICS DASHBOARD =====
+var _chartServices = null, _chartStatus = null, _chartRevenue = null;
+
+function showAnalytics() {
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','recycleBinPanel'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('adminList').style.display = 'none';
+  document.getElementById('analyticsPanel').style.display = 'block';
+
+  if (typeof Chart === 'undefined') {
+    document.getElementById('analyticsStats').innerHTML = '<div style="color:var(--gray);font-size:13px;">Loading chart library... please wait a moment and reopen Analytics.</div>';
+    return;
+  }
+
+  var apps = _allAdminApps || [];
+
+  // ---- Summary stats ----
+  var totalApps = apps.length;
+  var uniqueClients = {};
+  apps.forEach(function(a) { if (a.userId) uniqueClients[a.userId] = true; });
+  var totalClients = Object.keys(uniqueClients).length;
+
+  var totalRevenue = apps.reduce(function(sum, a) {
+    return sum + (a.paymentStatus === 'Paid' && a.quote ? (parseInt(a.quote) || 0) : 0);
+  }, 0);
+
+  // Average completion time (days) — from createdAt to the 'Completed' entry in statusHistory
+  var completionDurations = [];
+  apps.forEach(function(a) {
+    if (a.status !== 'Completed' || !a.createdAt || !a.createdAt.toDate || !a.statusHistory) return;
+    var completedEntry = a.statusHistory.find(function(h) { return h.status === 'Completed'; });
+    if (!completedEntry || !completedEntry.timestamp) return;
+    var start = a.createdAt.toDate().getTime();
+    var end = new Date(completedEntry.timestamp).getTime();
+    var days = (end - start) / (1000 * 60 * 60 * 24);
+    if (days >= 0) completionDurations.push(days);
+  });
+  var avgCompletion = completionDurations.length
+    ? (completionDurations.reduce(function(a, b) { return a + b; }, 0) / completionDurations.length).toFixed(1)
+    : '—';
+
+  var statsHtml =
+    '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">' +
+      '<div style="font-size:26px;font-weight:800;color:var(--primary);">' + totalApps + '</div>' +
+      '<div style="font-size:12px;color:var(--gray);margin-top:4px;">Total Applications</div></div>' +
+    '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">' +
+      '<div style="font-size:26px;font-weight:800;color:#059669;">₹' + totalRevenue.toLocaleString('en-IN') + '</div>' +
+      '<div style="font-size:12px;color:var(--gray);margin-top:4px;">Total Revenue Collected</div></div>' +
+    '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">' +
+      '<div style="font-size:26px;font-weight:800;color:#7c3aed;">' + totalClients + '</div>' +
+      '<div style="font-size:12px;color:var(--gray);margin-top:4px;">Unique Clients</div></div>' +
+    '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">' +
+      '<div style="font-size:26px;font-weight:800;color:#d97706;">' + avgCompletion + (avgCompletion !== '—' ? ' days' : '') + '</div>' +
+      '<div style="font-size:12px;color:var(--gray);margin-top:4px;">Avg. Completion Time</div></div>';
+  document.getElementById('analyticsStats').innerHTML = statsHtml;
+
+  // ---- Service popularity (top 8) ----
+  var serviceCounts = {};
+  apps.forEach(function(a) {
+    var s = a.service || 'Other';
+    serviceCounts[s] = (serviceCounts[s] || 0) + 1;
+  });
+  var sortedServices = Object.keys(serviceCounts).sort(function(a, b) { return serviceCounts[b] - serviceCounts[a]; }).slice(0, 8);
+
+  if (_chartServices) _chartServices.destroy();
+  _chartServices = new Chart(document.getElementById('chartServices'), {
+    type: 'bar',
+    data: {
+      labels: sortedServices,
+      datasets: [{
+        data: sortedServices.map(function(s) { return serviceCounts[s]; }),
+        backgroundColor: '#1a56db',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+
+  // ---- Status breakdown ----
+  var statusCounts = { Pending: 0, 'In Progress': 0, Completed: 0, Rejected: 0 };
+  apps.forEach(function(a) {
+    var st = a.status || 'Pending';
+    if (statusCounts[st] === undefined) statusCounts[st] = 0;
+    statusCounts[st]++;
+  });
+  var statusLabels = Object.keys(statusCounts).filter(function(k) { return statusCounts[k] > 0; });
+
+  if (_chartStatus) _chartStatus.destroy();
+  _chartStatus = new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusLabels.map(function(k) { return statusCounts[k]; }),
+        backgroundColor: statusLabels.map(function(k) {
+          return k === 'Completed' ? '#059669' : k === 'In Progress' ? '#1a56db' : k === 'Rejected' ? '#6b7280' : '#d97706';
+        })
+      }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // ---- Revenue by month (last 6 months) ----
+  var monthLabels = [];
+  var monthKeys = [];
+  var now = new Date();
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    monthLabels.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
+    monthKeys.push(d.getFullYear() + '-' + d.getMonth());
+  }
+  var monthRevenue = {};
+  monthKeys.forEach(function(k) { monthRevenue[k] = 0; });
+  apps.forEach(function(a) {
+    if (a.paymentStatus !== 'Paid' || !a.quote || !a.date) return;
+    var parts = a.date.split('/');
+    if (parts.length < 3) return;
+    var appDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    var key = appDate.getFullYear() + '-' + appDate.getMonth();
+    if (monthRevenue[key] !== undefined) monthRevenue[key] += (parseInt(a.quote) || 0);
+  });
+
+  if (_chartRevenue) _chartRevenue.destroy();
+  _chartRevenue = new Chart(document.getElementById('chartRevenue'), {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: monthKeys.map(function(k) { return monthRevenue[k]; }),
+        backgroundColor: '#059669',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return '₹' + v.toLocaleString('en-IN'); } } } }
+    }
+  });
+}
+
 // ===== RECYCLE BIN =====
 var _otpDeleteCode = null;
 var _otpDeleteDocId = null;
 var _otpDeleteName = null;
 
 function showRecycleBin() {
-  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel'].forEach(function(id) {
+  ['adminInvoicesPanel','adminUsersPanel','userAppsPanel','analyticsPanel'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
   document.getElementById('adminList').style.display = 'none';
