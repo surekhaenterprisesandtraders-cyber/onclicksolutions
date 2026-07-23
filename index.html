@@ -1032,18 +1032,38 @@ if ('serviceWorker' in navigator) {
       </div>
       <div class="tab-content" id="content-forgot">
         <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:40px;" aria-hidden="true">&#128272;</div>
+          <div style="font-size:40px;" aria-hidden="true">&#128274;</div>
           <div style="font-size:16px;font-weight:700;margin-top:8px;">Reset Password</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">We'll send a reset link to your email</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Latest reset link will be sent to your registered email</div>
         </div>
         <div class="form-group">
           <label class="form-label" for="forgotEmail">Registered Email Address <span class="req">*</span></label>
-          <input class="form-input" id="forgotEmail" type="email" placeholder="your@email.com">
+          <input class="form-input" id="forgotEmail" type="email" autocomplete="email" placeholder="your@email.com">
         </div>
-        <button class="btn-submit" onclick="doForgotPassword()">&#128231; Send Reset Link</button>
+        <button class="btn-submit" onclick="doForgotPassword()">&#128231; Send New Reset Link</button>
         <p style="text-align:center;margin-top:12px;font-size:13px;">
           <a style="color:var(--primary);cursor:pointer;" onclick="switchTab('login')">&#8592; Back to Login</a>
         </p>
+      </div>
+      <div class="tab-content" id="content-reset">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:40px;" aria-hidden="true">&#128273;</div>
+          <div style="font-size:16px;font-weight:700;margin-top:8px;">Create New Password</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Enter a new password for your account</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="resetAccountEmail">Account</label>
+          <input class="form-input" id="resetAccountEmail" type="email" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="resetNewPassword">New Password <span class="req">*</span></label>
+          <input class="form-input" id="resetNewPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Minimum 6 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="resetConfirmPassword">Confirm Password <span class="req">*</span></label>
+          <input class="form-input" id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Enter password again" onkeydown="if(event.key==='Enter') confirmNewPassword()">
+        </div>
+        <button class="btn-submit" onclick="confirmNewPassword()">&#9989; Update Password</button>
       </div>
     </div>
   </div>
@@ -2487,21 +2507,160 @@ async function confirmPayment() {
   renderDashboard();
 }
 
+var _passwordResetCode = null;
+var _passwordResetEmail = '';
+
 async function doForgotPassword() {
-  var email = document.getElementById('forgotEmail').value.trim();
-  if (!email) { showToast('Please enter your email!', 'error'); return; }
-  showLoader('Sending reset link...');
+  var emailInput = document.getElementById('forgotEmail');
+  var email = emailInput.value.trim().toLowerCase();
+
+  if (!email) {
+    showToast('Please enter your registered email!', 'error');
+    emailInput.focus();
+    return;
+  }
+
+  showLoader('Sending new reset link...');
+
   try {
-    await auth.sendPasswordResetEmail(email);
+    auth.useDeviceLanguage();
+
+    await auth.sendPasswordResetEmail(email, {
+      url: 'https://onclicksolutions.in/?reset=complete',
+      handleCodeInApp: false
+    });
+
     hideLoader();
-    showToast('Reset link sent! Check your email \uD83D\uDCE7', 'success');
-    setTimeout(function(){ closeModal(); }, 2000);
-  } catch(e) {
+    showToast('New reset link sent! Please use only the latest email. \uD83D\uDCE7', 'success');
+    setTimeout(function() { closeModal(); }, 2500);
+  } catch(error) {
     hideLoader();
-    if (e.code === 'auth/user-not-found') showToast('No account found with this email!', 'error');
-    else showToast('Error: ' + e.message, 'error');
+    console.error('Password reset email error:', error);
+
+    if (error.code === 'auth/invalid-email') {
+      showToast('Please enter a valid email address!', 'error');
+    } else if (error.code === 'auth/too-many-requests') {
+      showToast('Too many requests. Please try again later.', 'error');
+    } else if (error.code === 'auth/unauthorized-continue-uri' || error.code === 'auth/invalid-continue-uri') {
+      showToast('Password reset domain is not authorized in Firebase.', 'error');
+    } else {
+      showToast('Reset link could not be sent. Please try again.', 'error');
+    }
   }
 }
+
+async function handlePasswordResetLink() {
+  var params = new URLSearchParams(window.location.search);
+  var mode = params.get('mode');
+  var actionCode = params.get('oobCode');
+
+  if (mode !== 'resetPassword') return;
+
+  if (!actionCode) {
+    openModal('forgot');
+    showToast('Invalid reset link. Please request a new link.', 'error');
+    return;
+  }
+
+  showLoader('Checking reset link...');
+
+  try {
+    var email = await auth.verifyPasswordResetCode(actionCode);
+
+    _passwordResetCode = actionCode;
+    _passwordResetEmail = email;
+
+    hideLoader();
+    document.getElementById('resetAccountEmail').value = email;
+    document.getElementById('resetNewPassword').value = '';
+    document.getElementById('resetConfirmPassword').value = '';
+    openModal('reset');
+
+    setTimeout(function() {
+      document.getElementById('resetNewPassword').focus();
+    }, 200);
+  } catch(error) {
+    hideLoader();
+    console.error('Password reset link error:', error);
+
+    _passwordResetCode = null;
+    _passwordResetEmail = '';
+    window.history.replaceState({}, document.title, window.location.pathname);
+    openModal('forgot');
+
+    if (error.code === 'auth/expired-action-code' || error.code === 'auth/invalid-action-code') {
+      showToast('Reset link expired or already used. Please request a new link.', 'error');
+    } else if (error.code === 'auth/user-disabled') {
+      showToast('This account has been disabled.', 'error');
+    } else {
+      showToast('Reset link could not be verified. Please request a new link.', 'error');
+    }
+  }
+}
+
+async function confirmNewPassword() {
+  var newPasswordInput = document.getElementById('resetNewPassword');
+  var confirmPasswordInput = document.getElementById('resetConfirmPassword');
+  var newPassword = newPasswordInput.value;
+  var confirmPassword = confirmPasswordInput.value;
+
+  if (!_passwordResetCode) {
+    showToast('Reset link is invalid. Please request a new link.', 'error');
+    switchTab('forgot');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showToast('Password must be at least 6 characters.', 'error');
+    newPasswordInput.focus();
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showToast('Passwords do not match.', 'error');
+    confirmPasswordInput.focus();
+    return;
+  }
+
+  showLoader('Updating password...');
+
+  try {
+    await auth.confirmPasswordReset(_passwordResetCode, newPassword);
+
+    hideLoader();
+    var accountEmail = _passwordResetEmail;
+    _passwordResetCode = null;
+    _passwordResetEmail = '';
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+    document.getElementById('loginId').value = accountEmail;
+    document.getElementById('loginPass').value = '';
+    switchTab('login');
+    showToast('Password updated successfully! Please login. \u2705', 'success');
+
+    setTimeout(function() {
+      document.getElementById('loginPass').focus();
+    }, 200);
+  } catch(error) {
+    hideLoader();
+    console.error('Password update error:', error);
+
+    if (error.code === 'auth/expired-action-code' || error.code === 'auth/invalid-action-code') {
+      _passwordResetCode = null;
+      window.history.replaceState({}, document.title, window.location.pathname);
+      switchTab('forgot');
+      showToast('Reset link expired. Please request a new link.', 'error');
+    } else if (error.code === 'auth/weak-password') {
+      showToast('Please use a stronger password.', 'error');
+    } else {
+      showToast('Password could not be updated. Please try again.', 'error');
+    }
+  }
+}
+
+window.addEventListener('load', function() {
+  handlePasswordResetLink();
+});
 
 async function doLogin() {
   var emailInput = document.getElementById('loginId').value.trim();
@@ -2726,7 +2885,7 @@ function closeModal() { document.getElementById('authModal').classList.remove('o
 function closeModalOutside(e) { if (e.target === document.getElementById('authModal')) closeModal(); }
 
 function switchTab(tab) {
-  ['login','signup','forgot'].forEach(function(t) {
+  ['login','signup','forgot','reset'].forEach(function(t) {
     var tabEl = document.getElementById('tab-' + t);
     var contentEl = document.getElementById('content-' + t);
     if (tabEl) tabEl.classList.toggle('active', t === tab);
