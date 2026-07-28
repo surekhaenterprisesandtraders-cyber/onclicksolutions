@@ -984,6 +984,35 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 </div>
+<!-- DELETE USER DATA MODAL -->
+<div class="modal-overlay" id="userDataDeleteModal" onclick="closeDeleteUserDataModalOutside(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userDataDeleteTitle" style="max-width:440px;max-height:calc(100dvh - 20px);overflow-y:auto;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
+      <h3 id="userDataDeleteTitle">&#9888;&#65039; Delete User Data</h3>
+      <p>This permanently removes the account and all linked data.</p>
+      <button class="modal-close" onclick="closeDeleteUserDataModal()" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div id="userDataDeleteTarget" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;"></div>
+      <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:13px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#991b1b;">
+        Firebase login, user profile, applications, invoices, linked chats/messages, and all uploaded documents will be deleted permanently. This cannot be undone.
+      </div>
+      <div id="userDataDeleteSummary" style="background:var(--gray-light);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gray);">
+        Checking linked data...
+      </div>
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:11px;line-height:1.6;color:#92400e;">
+        Uploaded documents are deleted securely through the server. Do not close this page until the operation finishes.
+      </div>
+      <label class="form-label" for="userDataDeleteConfirm">Type <strong>DELETE</strong> to confirm</label>
+      <input class="form-input" id="userDataDeleteConfirm" type="text" autocomplete="off" placeholder="Type DELETE" oninput="updateDeleteUserDataButton()" style="text-transform:uppercase;">
+      <div id="userDataDeleteError" style="display:none;color:#dc2626;font-size:12px;margin-top:8px;"></div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <button type="button" class="btn btn-outline" onclick="closeDeleteUserDataModal()" style="flex:1;justify-content:center;">Cancel</button>
+        <button type="button" id="confirmDeleteUserDataBtn" onclick="deleteUserDataPermanently()" disabled style="flex:1;background:#dc2626;color:white;border:none;border-radius:9px;padding:10px 12px;font-size:13px;font-weight:700;cursor:not-allowed;opacity:.5;">Delete Everything</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="authModal" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
@@ -1311,6 +1340,7 @@ if ('serviceWorker' in navigator) {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 
@@ -1326,6 +1356,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const cloudFunctions = firebase.app().functions('us-central1');
 
 // Enable offline persistence — Firestore will cache data locally and
 // automatically queue/sync writes made while offline once back online.
@@ -4237,10 +4268,160 @@ function renderAdminUserList(users) {
       right.appendChild(waBtn);
     }
 
+    // Only the primary admin can permanently delete a client and linked data.
+    if (currentUser && currentUser.email === ADMIN_EMAIL && u.id !== currentUser.id) {
+      var deleteDataBtn = document.createElement('button');
+      deleteDataBtn.type = 'button';
+      deleteDataBtn.style.cssText = 'background:#fff1f2;color:#be123c;border:1.5px solid #fda4af;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;';
+      deleteDataBtn.textContent = '🗑️ Delete User Completely';
+      deleteDataBtn.addEventListener('click', (function(user) {
+        return function() { openDeleteUserDataModal(user); };
+      })(u));
+      right.appendChild(deleteDataBtn);
+    }
+
     card.appendChild(left);
     card.appendChild(right);
     list.appendChild(card);
   });
+}
+
+var _deleteUserDataTarget = null;
+
+function isPrimaryAdminAccount() {
+  return !!(currentUser && currentUser.role === 'admin' && currentUser.email === ADMIN_EMAIL);
+}
+
+function openDeleteUserDataModal(user) {
+  if (!isPrimaryAdminAccount()) {
+    showToast('Only the primary admin can delete user data.', 'error');
+    return;
+  }
+  if (!user || !user.id) {
+    showToast('User ID not found.', 'error');
+    return;
+  }
+  if (user.id === currentUser.id) {
+    showToast('You cannot delete your own admin data.', 'error');
+    return;
+  }
+
+  _deleteUserDataTarget = {
+    id: user.id,
+    name: user.name || 'Unknown User',
+    email: user.email || '',
+    phone: user.phone || ''
+  };
+
+  document.getElementById('userDataDeleteTarget').textContent =
+    _deleteUserDataTarget.name + (_deleteUserDataTarget.email ? ' — ' + _deleteUserDataTarget.email : '');
+  document.getElementById('userDataDeleteSummary').textContent = 'Checking linked data...';
+  document.getElementById('userDataDeleteConfirm').value = '';
+  document.getElementById('userDataDeleteError').style.display = 'none';
+  updateDeleteUserDataButton();
+  document.getElementById('userDataDeleteModal').classList.add('open');
+
+  var targetId = _deleteUserDataTarget.id;
+  Promise.all([
+    db.collection('applications').where('userId', '==', targetId).get(),
+    db.collection('invoices').where('userId', '==', targetId).get()
+  ]).then(function(results) {
+    if (!_deleteUserDataTarget || _deleteUserDataTarget.id !== targetId) return;
+    var appCount = results[0].size;
+    var invoiceCount = results[1].size;
+    document.getElementById('userDataDeleteSummary').textContent =
+      appCount + ' application(s), ' + invoiceCount +
+      ' invoice(s), linked chats/files, the profile, and Firebase login will be deleted.';
+  }).catch(function(e) {
+    if (!_deleteUserDataTarget || _deleteUserDataTarget.id !== targetId) return;
+    document.getElementById('userDataDeleteSummary').textContent =
+      'Could not preview counts. You can retry or cancel. Error: ' + e.message;
+  });
+
+  setTimeout(function() {
+    var input = document.getElementById('userDataDeleteConfirm');
+    if (input) input.focus();
+  }, 100);
+}
+
+function closeDeleteUserDataModal() {
+  document.getElementById('userDataDeleteModal').classList.remove('open');
+  document.getElementById('userDataDeleteConfirm').value = '';
+  document.getElementById('userDataDeleteError').style.display = 'none';
+  _deleteUserDataTarget = null;
+  updateDeleteUserDataButton();
+}
+
+function closeDeleteUserDataModalOutside(e) {
+  if (e.target === document.getElementById('userDataDeleteModal')) closeDeleteUserDataModal();
+}
+
+function updateDeleteUserDataButton() {
+  var btn = document.getElementById('confirmDeleteUserDataBtn');
+  var input = document.getElementById('userDataDeleteConfirm');
+  if (!btn || !input) return;
+  var enabled = !!_deleteUserDataTarget && input.value.trim().toUpperCase() === 'DELETE';
+  btn.disabled = !enabled;
+  btn.style.opacity = enabled ? '1' : '.5';
+  btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+}
+
+async function deleteUserDataPermanently() {
+  var errEl = document.getElementById('userDataDeleteError');
+  var confirmValue = document.getElementById('userDataDeleteConfirm').value.trim().toUpperCase();
+  if (!isPrimaryAdminAccount()) {
+    errEl.textContent = 'Only the primary admin can delete user data.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!_deleteUserDataTarget || !_deleteUserDataTarget.id) {
+    errEl.textContent = 'User information is missing. Close this window and try again.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (_deleteUserDataTarget.id === currentUser.id) {
+    errEl.textContent = 'You cannot delete your own admin data.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (confirmValue !== 'DELETE') {
+    errEl.textContent = 'Type DELETE exactly to continue.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  var target = Object.assign({}, _deleteUserDataTarget);
+  var deleteBtn = document.getElementById('confirmDeleteUserDataBtn');
+  deleteBtn.disabled = true;
+  deleteBtn.style.opacity = '.5';
+  deleteBtn.style.cursor = 'not-allowed';
+  errEl.style.display = 'none';
+  showLoader('Deleting user completely...', 'Removing login, records, chats, and uploaded files');
+
+  try {
+    var completeDelete = cloudFunctions.httpsCallable('deleteUserCompletely');
+    var response = await completeDelete({ uid: target.id });
+    var result = (response && response.data) || {};
+
+    hideLoader();
+    closeDeleteUserDataModal();
+    showToast(
+      'User deleted: ' + (result.applications || 0) + ' application(s), ' +
+      (result.invoices || 0) + ' invoice(s), ' +
+      (result.uploadedFiles || 0) + ' uploaded file(s), plus chats and login.',
+      'success'
+    );
+    showAdminUsers();
+  } catch(e) {
+    hideLoader();
+    console.error('User data deletion failed:', e);
+    var message = e && e.message ? e.message : 'Unknown server error';
+    errEl.textContent = 'Delete failed: ' + message + ' You can safely retry.';
+    errEl.style.display = 'block';
+    deleteBtn.disabled = false;
+    deleteBtn.style.opacity = '1';
+    deleteBtn.style.cursor = 'pointer';
+  }
 }
 
 function showAdminInvoices() {
@@ -4716,7 +4897,7 @@ async function adminUploadDoc(docId, fileInput) {
     var fileUrl = 'https://2rz0648lib.ucarecd.net/' + data.file + '/' + encodeURIComponent(file.name);
     var appDoc = await db.collection('applications').doc(docId).get();
     var existing = appDoc.data().adminDocs || [];
-    existing.push({ name: file.name, url: fileUrl });
+    existing.push({ name: file.name, url: fileUrl, uuid: data.file });
     await db.collection('applications').doc(docId).update({ adminDocs: existing });
     showToast('Document uploaded! Client can now download it. ✅', 'success');
     fileInput.value = '';
