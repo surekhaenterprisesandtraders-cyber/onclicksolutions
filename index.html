@@ -5471,6 +5471,19 @@ function removeQAFile(index) {
 // ===== UPLOADCARE FILE UPLOAD =====
 var UPLOADCARE_KEY = '61272880552672ca7a71';
 var _uploadcareSignatureCache = null;
+var _uploadcareClientModulePromise = null;
+
+function getUploadcareClientModule() {
+  if (!_uploadcareClientModulePromise) {
+    _uploadcareClientModulePromise = import(
+      'https://cdn.jsdelivr.net/npm/@uploadcare/upload-client@6.19.0/+esm'
+    ).catch(function(error) {
+      _uploadcareClientModulePromise = null;
+      throw error;
+    });
+  }
+  return _uploadcareClientModulePromise;
+}
 
 async function getUploadcareUploadSignature() {
   var nowSeconds = Math.floor(Date.now() / 1000);
@@ -5500,67 +5513,39 @@ async function getUploadcareUploadSignature() {
   return _uploadcareSignatureCache;
 }
 
-function uploadOneFileToUploadcare(file, uploadAuthorization) {
-  return new Promise(function(resolve, reject) {
-    if (!file) {
-      reject(new Error('The selected file is no longer available. Please select it again.'));
-      return;
-    }
-    if (!file.size) {
-      reject(new Error('The selected file is empty or iOS no longer allows access to it. Please select it again.'));
-      return;
-    }
+async function uploadOneFileToUploadcare(file, uploadAuthorization) {
+  if (!file) {
+    throw new Error('The selected file is no longer available. Please select it again.');
+  }
+  if (!file.size) {
+    throw new Error('The selected file is empty or iOS no longer allows access to it. Please select it again.');
+  }
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://upload.uploadcare.com/base/', true);
-    xhr.timeout = 180000;
+  var uploadcareModule;
+  try {
+    uploadcareModule = await getUploadcareClientModule();
+  } catch(e) {
+    throw new Error('Upload service could not load. Please refresh the page and try again.');
+  }
 
-    xhr.onload = function() {
-      var data = null;
-      try { data = JSON.parse(xhr.responseText || '{}'); } catch(e) {}
-
-      if (xhr.status >= 200 && xhr.status < 300 && data && data.file) {
-        resolve(data);
-        return;
-      }
-
-      var apiMessage = data && (
-        data.detail ||
-        (data.error && (
-          data.error.content ||
-          data.error.message ||
-          data.error.error_code
-        )) ||
-        (data.errors && JSON.stringify(data.errors))
-      );
-      var responsePreview = (!apiMessage && xhr.responseText)
-        ? xhr.responseText.replace(/\s+/g, ' ').slice(0, 180)
-        : '';
-      reject(new Error(
-        apiMessage ||
-        responsePreview ||
-        ('Upload service returned HTTP ' + xhr.status)
-      ));
-    };
-    xhr.onerror = function() {
-      reject(new Error('Mobile browser could not reach the upload service.'));
-    };
-    xhr.ontimeout = function() {
-      reject(new Error('Upload timed out. Keep Safari open and try again.'));
-    };
-    xhr.onabort = function() {
-      reject(new Error('Upload was cancelled.'));
-    };
-
-    var formData = new FormData();
-    formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
-    formData.append('UPLOADCARE_STORE', '1');
-    formData.append('signature', uploadAuthorization.signature);
-    formData.append('expire', String(uploadAuthorization.expire));
-    // Passing an explicit filename avoids iOS Safari sending an unnamed blob.
-    formData.append('file', file, file.name || ('document-' + Date.now()));
-    xhr.send(formData);
+  var client = new uploadcareModule.UploadClient({
+    publicKey: UPLOADCARE_KEY,
+    store: true,
+    secureSignature: uploadAuthorization.signature,
+    secureExpire: String(uploadAuthorization.expire)
   });
+
+  try {
+    var uploadedFile = await client.uploadFile(file);
+    var uuid = uploadedFile && (uploadedFile.uuid || uploadedFile.file);
+    if (!uuid) {
+      throw new Error('Upload completed without a file ID.');
+    }
+    return { file: uuid };
+  } catch(e) {
+    var message = e && e.message ? e.message : 'Upload failed.';
+    throw new Error(message);
+  }
 }
 
 async function uploadFilesToCloudinary(files, refId) {
