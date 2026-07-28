@@ -1833,6 +1833,10 @@ async function submitApplication() {
   if (selectedFiles.length > 0) {
     updateLoaderText('Uploading files...', selectedFiles.length + ' file(s) uploading');
     fileURLs = await uploadFilesToCloudinary(selectedFiles, ref);
+    if (fileURLs.failedFiles && fileURLs.failedFiles.length > 0) {
+      hideLoader();
+      return;
+    }
     if (fileURLs.length > 0) updateLoaderText('Files uploaded! ✅', 'Finishing up...');
   }
 
@@ -1918,6 +1922,10 @@ async function submitQuickApply() {
   if (selectedQAFiles.length > 0) {
     updateLoaderText('Uploading files...', selectedQAFiles.length + ' file(s) uploading');
     fileURLs = await uploadFilesToCloudinary(selectedQAFiles, ref);
+    if (fileURLs.failedFiles && fileURLs.failedFiles.length > 0) {
+      hideLoader();
+      return;
+    }
     if (fileURLs.length > 0) updateLoaderText('Files uploaded! ✅', 'Finishing up...');
   }
 
@@ -5409,8 +5417,9 @@ function handleFileUpload(input) {
     var exists = selectedFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
     if (!exists) selectedFiles.push(newFile);
   });
-  // Reset input so same file can be re-selected
-  input.value = '';
+  // Do not clear the input here. iOS Safari can invalidate the selected File
+  // handles after the picker is reset, which makes a later upload fail even
+  // though the file name and size are still visible on screen.
   renderSelectedFiles();
 }
 
@@ -5437,7 +5446,7 @@ function handleQAFileUpload(input) {
     var exists = selectedQAFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
     if (!exists) selectedQAFiles.push(newFile);
   });
-  input.value = '';
+  // Keep iOS Safari's underlying file handles alive until submission.
   renderSelectedQAFiles();
 }
 
@@ -5462,24 +5471,75 @@ function removeQAFile(index) {
 // ===== UPLOADCARE FILE UPLOAD =====
 var UPLOADCARE_KEY = '61272880552672ca7a71';
 
+function uploadOneFileToUploadcare(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file) {
+      reject(new Error('The selected file is no longer available. Please select it again.'));
+      return;
+    }
+    if (!file.size) {
+      reject(new Error('The selected file is empty or iOS no longer allows access to it. Please select it again.'));
+      return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://upload.uploadcare.com/base/', true);
+    xhr.timeout = 180000;
+
+    xhr.onload = function() {
+      var data = null;
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch(e) {}
+
+      if (xhr.status >= 200 && xhr.status < 300 && data && data.file) {
+        resolve(data);
+        return;
+      }
+
+      var apiMessage = data && (
+        data.detail ||
+        data.error ||
+        (data.errors && JSON.stringify(data.errors))
+      );
+      reject(new Error(apiMessage || ('Upload service returned HTTP ' + xhr.status)));
+    };
+    xhr.onerror = function() {
+      reject(new Error('Mobile browser could not reach the upload service.'));
+    };
+    xhr.ontimeout = function() {
+      reject(new Error('Upload timed out. Keep Safari open and try again.'));
+    };
+    xhr.onabort = function() {
+      reject(new Error('Upload was cancelled.'));
+    };
+
+    var formData = new FormData();
+    formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
+    formData.append('UPLOADCARE_STORE', '1');
+    // Passing an explicit filename avoids iOS Safari sending an unnamed blob.
+    formData.append('file', file, file.name || ('document-' + Date.now()));
+    xhr.send(formData);
+  });
+}
+
 async function uploadFilesToCloudinary(files, refId) {
   var uploaded = [];
+  var failedFiles = [];
+
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
     var success = false;
     var attempts = 0;
-    while (!success && attempts < 2) { // try up to 2 times per file
+    var lastError = null;
+
+    updateLoaderText(
+      'Uploading file ' + (i + 1) + ' of ' + files.length + '...',
+      file.name || 'Document'
+    );
+
+    while (!success && attempts < 3) {
       attempts++;
       try {
-        var formData = new FormData();
-        formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
-        formData.append('UPLOADCARE_STORE', '1');
-        formData.append('file', file);
-        var res = await fetch('https://upload.uploadcare.com/base/', {
-          method: 'POST',
-          body: formData
-        });
-        var data = await res.json();
+        var data = await uploadOneFileToUploadcare(file);
         if (data.file) {
           var fileUUID = data.file;
           var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
@@ -5488,15 +5548,32 @@ async function uploadFilesToCloudinary(files, refId) {
           success = true;
         }
       } catch(e) {
+        lastError = e;
         console.error('Upload attempt ' + attempts + ' failed:', file.name, e);
-        if (attempts < 2) {
-          await new Promise(function(resolve) { setTimeout(resolve, 1500); }); // brief pause before retry
+        if (attempts < 3) {
+          updateLoaderText(
+            'Retrying file ' + (i + 1) + ' of ' + files.length + '...',
+            file.name || 'Document'
+          );
+          await new Promise(function(resolve) { setTimeout(resolve, attempts * 1500); });
         }
       }
     }
+
     if (!success) {
-      showToast('Could not upload "' + file.name + '" — please check your connection.', 'error');
+      failedFiles.push({
+        name: file.name || 'Document',
+        error: lastError && lastError.message ? lastError.message : 'Unknown upload error'
+      });
     }
+  }
+
+  uploaded.failedFiles = failedFiles;
+  if (failedFiles.length > 0) {
+    showToast(
+      failedFiles.length + ' file(s) could not upload: ' + failedFiles[0].error,
+      'error'
+    );
   }
   return uploaded;
 }
