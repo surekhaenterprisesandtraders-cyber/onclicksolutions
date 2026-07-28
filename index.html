@@ -5470,8 +5470,37 @@ function removeQAFile(index) {
 
 // ===== UPLOADCARE FILE UPLOAD =====
 var UPLOADCARE_KEY = '61272880552672ca7a71';
+var _uploadcareSignatureCache = null;
 
-function uploadOneFileToUploadcare(file) {
+async function getUploadcareUploadSignature() {
+  var nowSeconds = Math.floor(Date.now() / 1000);
+  if (
+    _uploadcareSignatureCache &&
+    _uploadcareSignatureCache.signature &&
+    _uploadcareSignatureCache.expire > nowSeconds + 120
+  ) {
+    return _uploadcareSignatureCache;
+  }
+
+  if (!auth.currentUser) {
+    throw new Error('Please login again before uploading documents.');
+  }
+
+  var signatureFunction = cloudFunctions.httpsCallable('getUploadcareUploadSignature');
+  var response = await signatureFunction({});
+  var data = response && response.data;
+  if (!data || !data.signature || !data.expire) {
+    throw new Error('Upload authorization could not be created.');
+  }
+
+  _uploadcareSignatureCache = {
+    signature: data.signature,
+    expire: Number(data.expire)
+  };
+  return _uploadcareSignatureCache;
+}
+
+function uploadOneFileToUploadcare(file, uploadAuthorization) {
   return new Promise(function(resolve, reject) {
     if (!file) {
       reject(new Error('The selected file is no longer available. Please select it again.'));
@@ -5497,10 +5526,21 @@ function uploadOneFileToUploadcare(file) {
 
       var apiMessage = data && (
         data.detail ||
-        data.error ||
+        (data.error && (
+          data.error.content ||
+          data.error.message ||
+          data.error.error_code
+        )) ||
         (data.errors && JSON.stringify(data.errors))
       );
-      reject(new Error(apiMessage || ('Upload service returned HTTP ' + xhr.status)));
+      var responsePreview = (!apiMessage && xhr.responseText)
+        ? xhr.responseText.replace(/\s+/g, ' ').slice(0, 180)
+        : '';
+      reject(new Error(
+        apiMessage ||
+        responsePreview ||
+        ('Upload service returned HTTP ' + xhr.status)
+      ));
     };
     xhr.onerror = function() {
       reject(new Error('Mobile browser could not reach the upload service.'));
@@ -5515,6 +5555,8 @@ function uploadOneFileToUploadcare(file) {
     var formData = new FormData();
     formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
     formData.append('UPLOADCARE_STORE', '1');
+    formData.append('signature', uploadAuthorization.signature);
+    formData.append('expire', String(uploadAuthorization.expire));
     // Passing an explicit filename avoids iOS Safari sending an unnamed blob.
     formData.append('file', file, file.name || ('document-' + Date.now()));
     xhr.send(formData);
@@ -5524,6 +5566,24 @@ function uploadOneFileToUploadcare(file) {
 async function uploadFilesToCloudinary(files, refId) {
   var uploaded = [];
   var failedFiles = [];
+  var uploadAuthorization;
+
+  try {
+    updateLoaderText('Securing upload...', 'Please wait');
+    uploadAuthorization = await getUploadcareUploadSignature();
+  } catch(e) {
+    console.error('Upload authorization failed:', e);
+    showToast(
+      'Could not authorize document upload: ' +
+      (e && e.message ? e.message : 'Please login again.'),
+      'error'
+    );
+    uploaded.failedFiles = [{
+      name: 'Upload authorization',
+      error: e && e.message ? e.message : 'Authorization failed'
+    }];
+    return uploaded;
+  }
 
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
@@ -5539,7 +5599,7 @@ async function uploadFilesToCloudinary(files, refId) {
     while (!success && attempts < 3) {
       attempts++;
       try {
-        var data = await uploadOneFileToUploadcare(file);
+        var data = await uploadOneFileToUploadcare(file, uploadAuthorization);
         if (data.file) {
           var fileUUID = data.file;
           var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
