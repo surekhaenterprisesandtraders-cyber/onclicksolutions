@@ -4413,12 +4413,15 @@ async function deleteUserDataPermanently() {
 
     hideLoader();
     closeDeleteUserDataModal();
-    showToast(
+    var successMessage =
       'User deleted: ' + (result.applications || 0) + ' application(s), ' +
-      (result.invoices || 0) + ' invoice(s), ' +
-      (result.uploadedFiles || 0) + ' uploaded file(s), plus chats and login.',
-      'success'
-    );
+      (result.invoices || 0) + ' invoice(s), plus chats, profile, and login.';
+    if (result.fileCleanupPending) {
+      successMessage += ' Uploaded-file cleanup will retry automatically.';
+    } else {
+      successMessage += ' ' + (result.uploadedFiles || 0) + ' uploaded file(s) removed.';
+    }
+    showToast(successMessage, 'success');
     showAdminUsers();
   } catch(e) {
     hideLoader();
