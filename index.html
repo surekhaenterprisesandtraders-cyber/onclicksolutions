@@ -343,9 +343,6 @@ if ('serviceWorker' in navigator) {
   .modal-header h3 { font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; }
   .modal-header p { font-size:13px; opacity:.8; margin-top:3px; }
   .modal-body { padding:28px; }
-  #authModal .modal { max-height:calc(100dvh - 20px); display:flex; flex-direction:column; }
-  #authModal .modal-header { flex-shrink:0; }
-  #authModal .modal-body { overflow-y:auto; }
   .modal-tabs { display:flex; margin-bottom:24px; border:1.5px solid var(--border); border-radius:9px; overflow:hidden; }
   .modal-tab { flex:1; padding:10px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; background:var(--white); color:var(--gray); border:none; font-family:'Inter',sans-serif; transition:all .2s; }
   .modal-tab.active { background:var(--primary); color:var(--white); }
@@ -389,7 +386,7 @@ if ('serviceWorker' in navigator) {
   .why-desc { font-size:13px; color:var(--gray); line-height:1.6; }
   footer { background:var(--dark); color:rgba(255,255,255,0.6); text-align:center; padding:24px; font-size:13px; }
   footer strong { color:var(--white); }
-  .toast { position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); right:calc(24px + env(safe-area-inset-right)); background:var(--dark); color:var(--white); padding:14px 20px; border-radius:10px; font-size:14px; font-weight:500; box-shadow:0 8px 32px rgba(0,0,0,0.3); transform:translateX(calc(100% + 48px)); opacity:0; visibility:hidden; pointer-events:none; transition:transform .3s ease, opacity .3s ease, visibility 0s linear .3s; z-index:999; max-width:300px; display:flex; align-items:center; gap:10px; }
+  .toast { position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); right:calc(24px + env(safe-area-inset-right)); background:var(--dark); color:var(--white); padding:14px 20px; border-radius:10px; font-size:14px; font-weight:500; box-shadow:0 8px 32px rgba(0,0,0,0.3); transform:translateX(120%); transition:transform .3s ease; z-index:999; max-width:300px; display:flex; align-items:center; gap:10px; }
 
   /* ===== GLOBAL LOADING OVERLAY ===== */
   .loader-overlay {
@@ -433,7 +430,7 @@ if ('serviceWorker' in navigator) {
   .network-banner.online { background:#059669; }
   .network-banner .dot { width:8px; height:8px; border-radius:50%; background:white; animation:dotPulse 1.4s ease infinite; }
   @keyframes dotPulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-  .toast.show { transform:translateX(0); opacity:1; visibility:visible; pointer-events:auto; transition-delay:0s; }
+  .toast.show { transform:translateX(0); }
   .toast.success { border-left:4px solid var(--success); }
   .toast.error { border-left:4px solid var(--danger); }
   /* CHAT */
@@ -860,6 +857,7 @@ if ('serviceWorker' in navigator) {
     <button onclick="showRecycleBin()" id="btnRecycleBin" style="padding:8px 14px;background:#4b5563;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;position:relative;">🗑️ Recycle Bin <span id="recycleBinBadge" style="display:none;background:#dc2626;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;">0</span></button>
     <button onclick="showAnalytics()" id="btnAnalytics" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">📊 Analytics</button>
     <button onclick="showTeamManagement()" id="btnTeam" style="padding:8px 14px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">🧑‍💼 Team</button>
+    <button onclick="openResendVerificationModal()" style="padding:8px 14px;background:#0d9488;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;">✉️ Resend Verification</button>
   </div>
   <div id="invoiceSelectionInfo" style="display:none;padding:8px 0 0 24px;font-size:13px;color:#7c3aed;font-weight:600;">✅ <span id="invoiceSelectedCount">0</span> application(s) selected</div>
   <div class="applications-list" id="adminList"></div>
@@ -966,6 +964,29 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- RESEND VERIFICATION MODAL -->
+<div class="modal-overlay" id="resendVerificationModal" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>✉️ Resend Verification Email</h3>
+      <p>Send a fresh, branded verification link to any client's email.</p>
+      <button class="modal-close" onclick="closeResendVerificationModal()" aria-label="Close">&#10005;</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="form-group">
+        <label class="form-label" for="resendVerifyEmail">Client's email</label>
+        <input class="form-input" id="resendVerifyEmail" type="email" placeholder="client@email.com">
+      </div>
+      <div class="form-group" style="margin-bottom:6px;">
+        <label class="form-label" for="resendVerifyName">Client's name (optional, for greeting)</label>
+        <input class="form-input" id="resendVerifyName" type="text" placeholder="e.g. Ruchika">
+      </div>
+      <div id="resendVerifyResult" style="display:none;margin-bottom:12px;font-size:12px;padding:10px 12px;border-radius:8px;"></div>
+      <button onclick="resendVerificationEmail()" style="width:100%;background:#0d9488;color:white;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">Send Verification Email</button>
+    </div>
+  </div>
+</div>
+
 <!-- OTP DELETE MODAL -->
 <div class="modal-overlay" id="otpDeleteModal" style="display:none;align-items:center;justify-content:center;">
   <div class="modal" style="max-width:380px;">
@@ -981,35 +1002,6 @@ if ('serviceWorker' in navigator) {
       <div id="otpDeleteError" style="display:none;color:#dc2626;font-size:12px;text-align:center;margin-bottom:10px;"></div>
       <button onclick="verifyOtpAndDelete()" style="width:100%;background:#dc2626;color:white;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">🗑️ Confirm Permanent Delete</button>
       <button onclick="resendDeleteOtp()" style="width:100%;background:none;border:none;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;padding:6px;">Resend OTP</button>
-    </div>
-  </div>
-</div>
-<!-- DELETE USER DATA MODAL -->
-<div class="modal-overlay" id="userDataDeleteModal" onclick="closeDeleteUserDataModalOutside(event)">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userDataDeleteTitle" style="max-width:440px;max-height:calc(100dvh - 20px);overflow-y:auto;">
-    <div class="modal-header" style="background:linear-gradient(135deg,#991b1b,#dc2626);">
-      <h3 id="userDataDeleteTitle">&#9888;&#65039; Delete User Data</h3>
-      <p>This permanently removes the account and all linked data.</p>
-      <button class="modal-close" onclick="closeDeleteUserDataModal()" aria-label="Close">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div id="userDataDeleteTarget" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:12px;"></div>
-      <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:13px 14px;margin-bottom:14px;font-size:12px;line-height:1.6;color:#991b1b;">
-        Firebase login, user profile, applications, invoices, linked chats/messages, and all uploaded documents will be deleted permanently. This cannot be undone.
-      </div>
-      <div id="userDataDeleteSummary" style="background:var(--gray-light);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gray);">
-        Checking linked data...
-      </div>
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:11px;line-height:1.6;color:#92400e;">
-        Uploaded documents are deleted securely through the server. Do not close this page until the operation finishes.
-      </div>
-      <label class="form-label" for="userDataDeleteConfirm">Type <strong>DELETE</strong> to confirm</label>
-      <input class="form-input" id="userDataDeleteConfirm" type="text" autocomplete="off" placeholder="Type DELETE" oninput="updateDeleteUserDataButton()" style="text-transform:uppercase;">
-      <div id="userDataDeleteError" style="display:none;color:#dc2626;font-size:12px;margin-top:8px;"></div>
-      <div style="display:flex;gap:10px;margin-top:18px;">
-        <button type="button" class="btn btn-outline" onclick="closeDeleteUserDataModal()" style="flex:1;justify-content:center;">Cancel</button>
-        <button type="button" id="confirmDeleteUserDataBtn" onclick="deleteUserDataPermanently()" disabled style="flex:1;background:#dc2626;color:white;border:none;border-radius:9px;padding:10px 12px;font-size:13px;font-weight:700;cursor:not-allowed;opacity:.5;">Delete Everything</button>
-      </div>
     </div>
   </div>
 </div>
@@ -1057,49 +1049,29 @@ if ('serviceWorker' in navigator) {
         </div>
         <div class="form-group">
           <label class="form-label" for="signupPass">Password <span class="req">*</span></label>
-          <input class="form-input" id="signupPass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters">
+          <input class="form-input" id="signupPass" type="password" placeholder="Minimum 6 characters" oninput="clearFieldErrors(['signupPass','signupPassConfirm'])">
         </div>
         <div class="form-group">
-          <label class="form-label" for="signupConfirmPass">Confirm Password <span class="req">*</span></label>
-          <input class="form-input" id="signupConfirmPass" type="password" autocomplete="new-password" placeholder="Enter password again">
+          <label class="form-label" for="signupPassConfirm">Confirm Password <span class="req">*</span></label>
+          <input class="form-input" id="signupPassConfirm" type="password" placeholder="Re-enter your password" oninput="clearFieldErrors(['signupPass','signupPassConfirm'])">
         </div>
         <button class="btn-submit" onclick="doSignup()">Create My Account &rarr;</button>
         <p style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">&#128231; A verification link will be sent to your email after signup</p>
       </div>
       <div class="tab-content" id="content-forgot">
         <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:40px;" aria-hidden="true">&#128274;</div>
+          <div style="font-size:40px;" aria-hidden="true">&#128272;</div>
           <div style="font-size:16px;font-weight:700;margin-top:8px;">Reset Password</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Latest reset link will be sent to your registered email</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:4px;">We'll send a reset link to your email</div>
         </div>
         <div class="form-group">
           <label class="form-label" for="forgotEmail">Registered Email Address <span class="req">*</span></label>
-          <input class="form-input" id="forgotEmail" type="email" autocomplete="email" placeholder="your@email.com">
+          <input class="form-input" id="forgotEmail" type="email" placeholder="your@email.com">
         </div>
-        <button class="btn-submit" onclick="doForgotPassword()">&#128231; Send New Reset Link</button>
+        <button class="btn-submit" onclick="doForgotPassword()">&#128231; Send Reset Link</button>
         <p style="text-align:center;margin-top:12px;font-size:13px;">
           <a style="color:var(--primary);cursor:pointer;" onclick="switchTab('login')">&#8592; Back to Login</a>
         </p>
-      </div>
-      <div class="tab-content" id="content-reset">
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:40px;" aria-hidden="true">&#128273;</div>
-          <div style="font-size:16px;font-weight:700;margin-top:8px;">Create New Password</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Enter a new password for your account</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="resetAccountEmail">Account</label>
-          <input class="form-input" id="resetAccountEmail" type="email" readonly>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="resetNewPassword">New Password <span class="req">*</span></label>
-          <input class="form-input" id="resetNewPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Minimum 6 characters">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="resetConfirmPassword">Confirm Password <span class="req">*</span></label>
-          <input class="form-input" id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Enter password again" onkeydown="if(event.key==='Enter') confirmNewPassword()">
-        </div>
-        <button class="btn-submit" onclick="confirmNewPassword()">&#9989; Update Password</button>
       </div>
     </div>
   </div>
@@ -1328,7 +1300,7 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <div class="network-banner" id="networkBanner"></div>
-<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="toast" id="toast"></div>
 <div class="loader-overlay" id="loaderOverlay">
   <div class="loader-box">
     <div class="loader-spinner"></div>
@@ -1340,8 +1312,8 @@ if ('serviceWorker' in navigator) {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script>
 
 const firebaseConfig = {
@@ -1356,7 +1328,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const cloudFunctions = firebase.app().functions('us-central1');
+const cloudFunctions = firebase.functions();
 
 // Enable offline persistence — Firestore will cache data locally and
 // automatically queue/sync writes made while offline once back online.
@@ -1833,10 +1805,6 @@ async function submitApplication() {
   if (selectedFiles.length > 0) {
     updateLoaderText('Uploading files...', selectedFiles.length + ' file(s) uploading');
     fileURLs = await uploadFilesToCloudinary(selectedFiles, ref);
-    if (fileURLs.failedFiles && fileURLs.failedFiles.length > 0) {
-      hideLoader();
-      return;
-    }
     if (fileURLs.length > 0) updateLoaderText('Files uploaded! ✅', 'Finishing up...');
   }
 
@@ -1922,10 +1890,6 @@ async function submitQuickApply() {
   if (selectedQAFiles.length > 0) {
     updateLoaderText('Uploading files...', selectedQAFiles.length + ' file(s) uploading');
     fileURLs = await uploadFilesToCloudinary(selectedQAFiles, ref);
-    if (fileURLs.failedFiles && fileURLs.failedFiles.length > 0) {
-      hideLoader();
-      return;
-    }
     if (fileURLs.length > 0) updateLoaderText('Files uploaded! ✅', 'Finishing up...');
   }
 
@@ -2553,160 +2517,21 @@ async function confirmPayment() {
   renderDashboard();
 }
 
-var _passwordResetCode = null;
-var _passwordResetEmail = '';
-
 async function doForgotPassword() {
-  var emailInput = document.getElementById('forgotEmail');
-  var email = emailInput.value.trim().toLowerCase();
-
-  if (!email) {
-    showToast('Please enter your registered email!', 'error');
-    emailInput.focus();
-    return;
-  }
-
-  showLoader('Sending new reset link...');
-
+  var email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { showToast('Please enter your email!', 'error'); return; }
+  showLoader('Sending reset link...');
   try {
-    auth.useDeviceLanguage();
-
-    await auth.sendPasswordResetEmail(email, {
-      url: 'https://onclicksolutions.in/?reset=complete',
-      handleCodeInApp: false
-    });
-
+    await auth.sendPasswordResetEmail(email);
     hideLoader();
-    showToast('New reset link sent! Please use only the latest email. \uD83D\uDCE7', 'success');
-    setTimeout(function() { closeModal(); }, 2500);
-  } catch(error) {
+    showToast('Reset link sent! Check your email \uD83D\uDCE7', 'success');
+    setTimeout(function(){ closeModal(); }, 2000);
+  } catch(e) {
     hideLoader();
-    console.error('Password reset email error:', error);
-
-    if (error.code === 'auth/invalid-email') {
-      showToast('Please enter a valid email address!', 'error');
-    } else if (error.code === 'auth/too-many-requests') {
-      showToast('Too many requests. Please try again later.', 'error');
-    } else if (error.code === 'auth/unauthorized-continue-uri' || error.code === 'auth/invalid-continue-uri') {
-      showToast('Password reset domain is not authorized in Firebase.', 'error');
-    } else {
-      showToast('Reset link could not be sent. Please try again.', 'error');
-    }
+    if (e.code === 'auth/user-not-found') showToast('No account found with this email!', 'error');
+    else showToast('Error: ' + e.message, 'error');
   }
 }
-
-async function handlePasswordResetLink() {
-  var params = new URLSearchParams(window.location.search);
-  var mode = params.get('mode');
-  var actionCode = params.get('oobCode');
-
-  if (mode !== 'resetPassword') return;
-
-  if (!actionCode) {
-    openModal('forgot');
-    showToast('Invalid reset link. Please request a new link.', 'error');
-    return;
-  }
-
-  showLoader('Checking reset link...');
-
-  try {
-    var email = await auth.verifyPasswordResetCode(actionCode);
-
-    _passwordResetCode = actionCode;
-    _passwordResetEmail = email;
-
-    hideLoader();
-    document.getElementById('resetAccountEmail').value = email;
-    document.getElementById('resetNewPassword').value = '';
-    document.getElementById('resetConfirmPassword').value = '';
-    openModal('reset');
-
-    setTimeout(function() {
-      document.getElementById('resetNewPassword').focus();
-    }, 200);
-  } catch(error) {
-    hideLoader();
-    console.error('Password reset link error:', error);
-
-    _passwordResetCode = null;
-    _passwordResetEmail = '';
-    window.history.replaceState({}, document.title, window.location.pathname);
-    openModal('forgot');
-
-    if (error.code === 'auth/expired-action-code' || error.code === 'auth/invalid-action-code') {
-      showToast('Reset link expired or already used. Please request a new link.', 'error');
-    } else if (error.code === 'auth/user-disabled') {
-      showToast('This account has been disabled.', 'error');
-    } else {
-      showToast('Reset link could not be verified. Please request a new link.', 'error');
-    }
-  }
-}
-
-async function confirmNewPassword() {
-  var newPasswordInput = document.getElementById('resetNewPassword');
-  var confirmPasswordInput = document.getElementById('resetConfirmPassword');
-  var newPassword = newPasswordInput.value;
-  var confirmPassword = confirmPasswordInput.value;
-
-  if (!_passwordResetCode) {
-    showToast('Reset link is invalid. Please request a new link.', 'error');
-    switchTab('forgot');
-    return;
-  }
-
-  if (newPassword.length < 6) {
-    showToast('Password must be at least 6 characters.', 'error');
-    newPasswordInput.focus();
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    showToast('Passwords do not match.', 'error');
-    confirmPasswordInput.focus();
-    return;
-  }
-
-  showLoader('Updating password...');
-
-  try {
-    await auth.confirmPasswordReset(_passwordResetCode, newPassword);
-
-    hideLoader();
-    var accountEmail = _passwordResetEmail;
-    _passwordResetCode = null;
-    _passwordResetEmail = '';
-
-    window.history.replaceState({}, document.title, window.location.pathname);
-    document.getElementById('loginId').value = accountEmail;
-    document.getElementById('loginPass').value = '';
-    switchTab('login');
-    showToast('Password updated successfully! Please login. \u2705', 'success');
-
-    setTimeout(function() {
-      document.getElementById('loginPass').focus();
-    }, 200);
-  } catch(error) {
-    hideLoader();
-    console.error('Password update error:', error);
-
-    if (error.code === 'auth/expired-action-code' || error.code === 'auth/invalid-action-code') {
-      _passwordResetCode = null;
-      window.history.replaceState({}, document.title, window.location.pathname);
-      switchTab('forgot');
-      showToast('Reset link expired. Please request a new link.', 'error');
-    } else if (error.code === 'auth/weak-password') {
-      showToast('Please use a stronger password.', 'error');
-    } else {
-      showToast('Password could not be updated. Please try again.', 'error');
-    }
-  }
-}
-
-window.addEventListener('load', function() {
-  handlePasswordResetLink();
-});
 
 async function doLogin() {
   var emailInput = document.getElementById('loginId').value.trim();
@@ -2751,10 +2576,17 @@ async function doSignup() {
   var phone = document.getElementById('signupPhone').value.trim();
   var email = document.getElementById('signupEmail').value.trim();
   var pass = document.getElementById('signupPass').value;
-  var confirmPass = document.getElementById('signupConfirmPass').value;
-  if (!name || !phone || !email || !pass || !confirmPass) { showToast('Please fill all required fields!', 'error'); return; }
+  var passConfirm = document.getElementById('signupPassConfirm').value;
+  if (!name || !phone || !email || !pass || !passConfirm) { showToast('Please fill all required fields!', 'error'); return; }
   if (pass.length < 6) { showToast('Password must be at least 6 characters!', 'error'); return; }
-  if (pass !== confirmPass) { showToast('Passwords do not match!', 'error'); return; }
+  if (pass !== passConfirm) {
+    showToast('Passwords do not match!', 'error');
+    var passEl = document.getElementById('signupPass');
+    var confirmEl = document.getElementById('signupPassConfirm');
+    passEl.classList.add('field-error');
+    confirmEl.classList.add('field-error');
+    return;
+  }
   showLoader('Creating your account...');
   try {
     var cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -2933,7 +2765,7 @@ function closeModal() { document.getElementById('authModal').classList.remove('o
 function closeModalOutside(e) { if (e.target === document.getElementById('authModal')) closeModal(); }
 
 function switchTab(tab) {
-  ['login','signup','forgot','reset'].forEach(function(t) {
+  ['login','signup','forgot'].forEach(function(t) {
     var tabEl = document.getElementById('tab-' + t);
     var contentEl = document.getElementById('content-' + t);
     if (tabEl) tabEl.classList.toggle('active', t === tab);
@@ -3697,6 +3529,62 @@ function closeAdminPanel(panelId) {
   document.getElementById('adminList').style.display = 'block';
 }
 
+// ===== RESEND VERIFICATION EMAIL (Admin-only, via Cloud Function) =====
+function openResendVerificationModal() {
+  document.getElementById('resendVerifyEmail').value = '';
+  document.getElementById('resendVerifyName').value = '';
+  var resultEl = document.getElementById('resendVerifyResult');
+  resultEl.style.display = 'none';
+  document.getElementById('resendVerificationModal').style.display = 'flex';
+}
+
+function closeResendVerificationModal() {
+  document.getElementById('resendVerificationModal').style.display = 'none';
+}
+
+async function resendVerificationEmail() {
+  var email = document.getElementById('resendVerifyEmail').value.trim();
+  var name = document.getElementById('resendVerifyName').value.trim() || 'there';
+  var resultEl = document.getElementById('resendVerifyResult');
+
+  if (!email) { showToast('Please enter the client\'s email!', 'error'); return; }
+
+  showLoader('Generating verification link...');
+  try {
+    var callable = cloudFunctions.httpsCallable('generateVerificationLink');
+    var result = await callable({ email: email });
+    var link = result.data.link;
+
+    updateLoaderText('Sending email...', 'Almost done');
+    await emailjs.send('service_ybsphno', 'template_1eqx68r', {
+      client_name: name,
+      client_phone: '',
+      client_email: email,
+      service_name: 'Account Verification',
+      sub_service: '🔐 Verify Your Email',
+      ref_id: '',
+      quote: '',
+      remark: '',
+      notes: 'Please verify your email to activate your account. Copy and open this link in your browser: ' + link,
+      date: new Date().toLocaleDateString('en-IN')
+    });
+
+    hideLoader();
+    resultEl.style.display = 'block';
+    resultEl.style.background = '#d1fae5';
+    resultEl.style.color = '#065f46';
+    resultEl.textContent = '✅ Verification email sent to ' + email;
+    showToast('Verification email sent! ✅', 'success');
+  } catch(e) {
+    hideLoader();
+    resultEl.style.display = 'block';
+    resultEl.style.background = '#fee2e2';
+    resultEl.style.color = '#991b1b';
+    resultEl.textContent = '❌ ' + (e.message || 'Something went wrong');
+    showToast('Failed: ' + e.message, 'error');
+  }
+}
+
 // ===== ANALYTICS DASHBOARD =====
 var _chartServices = null, _chartStatus = null, _chartRevenue = null;
 
@@ -4276,160 +4164,10 @@ function renderAdminUserList(users) {
       right.appendChild(waBtn);
     }
 
-    // Only the primary admin can permanently delete a client and linked data.
-    if (currentUser && currentUser.email === ADMIN_EMAIL && u.id !== currentUser.id) {
-      var deleteDataBtn = document.createElement('button');
-      deleteDataBtn.type = 'button';
-      deleteDataBtn.style.cssText = 'background:#fff1f2;color:#be123c;border:1.5px solid #fda4af;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;cursor:pointer;';
-      deleteDataBtn.textContent = '🗑️ Delete User Completely';
-      deleteDataBtn.addEventListener('click', (function(user) {
-        return function() { openDeleteUserDataModal(user); };
-      })(u));
-      right.appendChild(deleteDataBtn);
-    }
-
     card.appendChild(left);
     card.appendChild(right);
     list.appendChild(card);
   });
-}
-
-var _deleteUserDataTarget = null;
-
-function isPrimaryAdminAccount() {
-  return !!(currentUser && currentUser.role === 'admin' && currentUser.email === ADMIN_EMAIL);
-}
-
-function openDeleteUserDataModal(user) {
-  if (!isPrimaryAdminAccount()) {
-    showToast('Only the primary admin can delete user data.', 'error');
-    return;
-  }
-  if (!user || !user.id) {
-    showToast('User ID not found.', 'error');
-    return;
-  }
-  if (user.id === currentUser.id) {
-    showToast('You cannot delete your own admin data.', 'error');
-    return;
-  }
-
-  _deleteUserDataTarget = {
-    id: user.id,
-    name: user.name || 'Unknown User',
-    email: user.email || '',
-    phone: user.phone || ''
-  };
-
-  document.getElementById('userDataDeleteTarget').textContent =
-    _deleteUserDataTarget.name + (_deleteUserDataTarget.email ? ' — ' + _deleteUserDataTarget.email : '');
-  document.getElementById('userDataDeleteSummary').textContent = 'Checking linked data...';
-  document.getElementById('userDataDeleteConfirm').value = '';
-  document.getElementById('userDataDeleteError').style.display = 'none';
-  updateDeleteUserDataButton();
-  document.getElementById('userDataDeleteModal').classList.add('open');
-
-  var targetId = _deleteUserDataTarget.id;
-  Promise.all([
-    db.collection('applications').where('userId', '==', targetId).get(),
-    db.collection('invoices').where('userId', '==', targetId).get()
-  ]).then(function(results) {
-    if (!_deleteUserDataTarget || _deleteUserDataTarget.id !== targetId) return;
-    var appCount = results[0].size;
-    var invoiceCount = results[1].size;
-    document.getElementById('userDataDeleteSummary').textContent =
-      appCount + ' application(s), ' + invoiceCount +
-      ' invoice(s), linked chats/files, the profile, and Firebase login will be deleted.';
-  }).catch(function(e) {
-    if (!_deleteUserDataTarget || _deleteUserDataTarget.id !== targetId) return;
-    document.getElementById('userDataDeleteSummary').textContent =
-      'Could not preview counts. You can retry or cancel. Error: ' + e.message;
-  });
-
-  setTimeout(function() {
-    var input = document.getElementById('userDataDeleteConfirm');
-    if (input) input.focus();
-  }, 100);
-}
-
-function closeDeleteUserDataModal() {
-  document.getElementById('userDataDeleteModal').classList.remove('open');
-  document.getElementById('userDataDeleteConfirm').value = '';
-  document.getElementById('userDataDeleteError').style.display = 'none';
-  _deleteUserDataTarget = null;
-  updateDeleteUserDataButton();
-}
-
-function closeDeleteUserDataModalOutside(e) {
-  if (e.target === document.getElementById('userDataDeleteModal')) closeDeleteUserDataModal();
-}
-
-function updateDeleteUserDataButton() {
-  var btn = document.getElementById('confirmDeleteUserDataBtn');
-  var input = document.getElementById('userDataDeleteConfirm');
-  if (!btn || !input) return;
-  var enabled = !!_deleteUserDataTarget && input.value.trim().toUpperCase() === 'DELETE';
-  btn.disabled = !enabled;
-  btn.style.opacity = enabled ? '1' : '.5';
-  btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
-}
-
-async function deleteUserDataPermanently() {
-  var errEl = document.getElementById('userDataDeleteError');
-  var confirmValue = document.getElementById('userDataDeleteConfirm').value.trim().toUpperCase();
-  if (!isPrimaryAdminAccount()) {
-    errEl.textContent = 'Only the primary admin can delete user data.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (!_deleteUserDataTarget || !_deleteUserDataTarget.id) {
-    errEl.textContent = 'User information is missing. Close this window and try again.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (_deleteUserDataTarget.id === currentUser.id) {
-    errEl.textContent = 'You cannot delete your own admin data.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (confirmValue !== 'DELETE') {
-    errEl.textContent = 'Type DELETE exactly to continue.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  var target = Object.assign({}, _deleteUserDataTarget);
-  var deleteBtn = document.getElementById('confirmDeleteUserDataBtn');
-  deleteBtn.disabled = true;
-  deleteBtn.style.opacity = '.5';
-  deleteBtn.style.cursor = 'not-allowed';
-  errEl.style.display = 'none';
-  showLoader('Deleting user completely...', 'Removing login, records, chats, and uploaded files');
-
-  try {
-    var completeDelete = cloudFunctions.httpsCallable('deleteUserCompletely');
-    var response = await completeDelete({ uid: target.id });
-    var result = (response && response.data) || {};
-
-    hideLoader();
-    closeDeleteUserDataModal();
-    showToast(
-      'User deleted: ' + (result.applications || 0) + ' application(s), ' +
-      (result.invoices || 0) + ' invoice(s), ' +
-      (result.uploadedFiles || 0) + ' uploaded file(s), plus chats and login.',
-      'success'
-    );
-    showAdminUsers();
-  } catch(e) {
-    hideLoader();
-    console.error('User data deletion failed:', e);
-    var message = e && e.message ? e.message : 'Unknown server error';
-    errEl.textContent = 'Delete failed: ' + message + ' You can safely retry.';
-    errEl.style.display = 'block';
-    deleteBtn.disabled = false;
-    deleteBtn.style.opacity = '1';
-    deleteBtn.style.cursor = 'pointer';
-  }
 }
 
 function showAdminInvoices() {
@@ -4905,7 +4643,7 @@ async function adminUploadDoc(docId, fileInput) {
     var fileUrl = 'https://2rz0648lib.ucarecd.net/' + data.file + '/' + encodeURIComponent(file.name);
     var appDoc = await db.collection('applications').doc(docId).get();
     var existing = appDoc.data().adminDocs || [];
-    existing.push({ name: file.name, url: fileUrl, uuid: data.file });
+    existing.push({ name: file.name, url: fileUrl });
     await db.collection('applications').doc(docId).update({ adminDocs: existing });
     showToast('Document uploaded! Client can now download it. ✅', 'success');
     fileInput.value = '';
@@ -5367,18 +5105,13 @@ function statusClass(s) {
   return 'status-done';
 }
 
-var _toastTimer = null;
 function showToast(msg, type) {
   type = type || 'success';
   var t = document.getElementById('toast');
-  if (_toastTimer) clearTimeout(_toastTimer);
   t.textContent = (type === 'success' ? '\u2705 ' : '\u274C ') + msg;
   t.className = 'toast ' + type;
   t.classList.add('show');
-  _toastTimer = setTimeout(function(){
-    t.classList.remove('show');
-    _toastTimer = null;
-  }, 3500);
+  setTimeout(function(){ t.classList.remove('show'); }, 3500);
 }
 
 // ===== GLOBAL LOADING OVERLAY =====
@@ -5417,9 +5150,8 @@ function handleFileUpload(input) {
     var exists = selectedFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
     if (!exists) selectedFiles.push(newFile);
   });
-  // Do not clear the input here. iOS Safari can invalidate the selected File
-  // handles after the picker is reset, which makes a later upload fail even
-  // though the file name and size are still visible on screen.
+  // Reset input so same file can be re-selected
+  input.value = '';
   renderSelectedFiles();
 }
 
@@ -5446,7 +5178,7 @@ function handleQAFileUpload(input) {
     var exists = selectedQAFiles.some(function(f) { return f.name === newFile.name && f.size === newFile.size; });
     if (!exists) selectedQAFiles.push(newFile);
   });
-  // Keep iOS Safari's underlying file handles alive until submission.
+  input.value = '';
   renderSelectedQAFiles();
 }
 
@@ -5471,78 +5203,24 @@ function removeQAFile(index) {
 // ===== UPLOADCARE FILE UPLOAD =====
 var UPLOADCARE_KEY = '61272880552672ca7a71';
 
-function readFileAsBase64(file) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader();
-    reader.onload = function() {
-      var result = String(reader.result || '');
-      var commaIndex = result.indexOf(',');
-      if (commaIndex < 0) {
-        reject(new Error('The selected file could not be read.'));
-        return;
-      }
-      resolve(result.slice(commaIndex + 1));
-    };
-    reader.onerror = function() {
-      reject(new Error('The selected file could not be read. Please select it again.'));
-    };
-    reader.onabort = function() {
-      reject(new Error('File reading was cancelled.'));
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadOneFileToUploadcare(file) {
-  if (!file) {
-    throw new Error('The selected file is no longer available. Please select it again.');
-  }
-  if (!file.size) {
-    throw new Error('The selected file is empty or iOS no longer allows access to it. Please select it again.');
-  }
-
-  try {
-    var base64 = await readFileAsBase64(file);
-    var uploadFunction = cloudFunctions.httpsCallable(
-      'uploadDocumentFile',
-      { timeout: 180000 }
-    );
-    var response = await uploadFunction({
-      fileName: file.name || ('document-' + Date.now()),
-      contentType: file.type || 'application/octet-stream',
-      base64: base64
-    });
-    var uploadedFile = response && response.data;
-    var uuid = uploadedFile && uploadedFile.uuid;
-    if (!uuid) {
-      throw new Error('Upload completed without a file ID.');
-    }
-    return { file: uuid };
-  } catch(e) {
-    var message = e && e.message ? e.message : 'Upload failed.';
-    throw new Error(message);
-  }
-}
-
 async function uploadFilesToCloudinary(files, refId) {
   var uploaded = [];
-  var failedFiles = [];
-
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
     var success = false;
     var attempts = 0;
-    var lastError = null;
-
-    updateLoaderText(
-      'Uploading file ' + (i + 1) + ' of ' + files.length + '...',
-      file.name || 'Document'
-    );
-
-    while (!success && attempts < 3) {
+    while (!success && attempts < 2) { // try up to 2 times per file
       attempts++;
       try {
-        var data = await uploadOneFileToUploadcare(file);
+        var formData = new FormData();
+        formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_KEY);
+        formData.append('UPLOADCARE_STORE', '1');
+        formData.append('file', file);
+        var res = await fetch('https://upload.uploadcare.com/base/', {
+          method: 'POST',
+          body: formData
+        });
+        var data = await res.json();
         if (data.file) {
           var fileUUID = data.file;
           var isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
@@ -5551,32 +5229,15 @@ async function uploadFilesToCloudinary(files, refId) {
           success = true;
         }
       } catch(e) {
-        lastError = e;
         console.error('Upload attempt ' + attempts + ' failed:', file.name, e);
-        if (attempts < 3) {
-          updateLoaderText(
-            'Retrying file ' + (i + 1) + ' of ' + files.length + '...',
-            file.name || 'Document'
-          );
-          await new Promise(function(resolve) { setTimeout(resolve, attempts * 1500); });
+        if (attempts < 2) {
+          await new Promise(function(resolve) { setTimeout(resolve, 1500); }); // brief pause before retry
         }
       }
     }
-
     if (!success) {
-      failedFiles.push({
-        name: file.name || 'Document',
-        error: lastError && lastError.message ? lastError.message : 'Unknown upload error'
-      });
+      showToast('Could not upload "' + file.name + '" — please check your connection.', 'error');
     }
-  }
-
-  uploaded.failedFiles = failedFiles;
-  if (failedFiles.length > 0) {
-    showToast(
-      failedFiles.length + ' file(s) could not upload: ' + failedFiles[0].error,
-      'error'
-    );
   }
   return uploaded;
 }
