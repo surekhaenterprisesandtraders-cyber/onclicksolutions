@@ -14,6 +14,16 @@ const db = getFirestore();
 const UPLOADCARE_SECRET_KEY = defineSecret("UPLOADCARE_SECRET_KEY");
 const UPLOADCARE_PUBLIC_KEY = "61272880552672ca7a71";
 const PRIMARY_ADMIN_EMAIL = "admin@onclicksolutions.in";
+const USER_DELETION_JOBS = "userDeletionJobs";
+
+class LinkedFileCleanupError extends Error {
+  constructor(message, result) {
+    super(message);
+    this.name = "LinkedFileCleanupError";
+    this.code = "linked-file-cleanup-pending";
+    this.result = result;
+  }
+}
 
 function uploadcareUuid(value) {
   if (!value) return "";
@@ -114,17 +124,33 @@ async function cleanupUserData(uid) {
     throw new Error("A valid user ID is required.");
   }
 
-  const [applicationSnap, invoiceSnap] = await Promise.all([
+  const cleanupJobRef = db.collection(USER_DELETION_JOBS).doc(uid);
+  const [applicationSnap, invoiceSnap, cleanupJobSnap] = await Promise.all([
     db.collection("applications").where("userId", "==", uid).get(),
     db.collection("invoices").where("userId", "==", uid).get(),
+    cleanupJobRef.get(),
   ]);
 
   const applicationDocs = applicationSnap.docs;
-  const uploadcareUuids = collectUploadcareUuids(applicationDocs);
+  const savedUuids = cleanupJobSnap.exists &&
+    Array.isArray(cleanupJobSnap.data().uploadcareUuids) ?
+    cleanupJobSnap.data().uploadcareUuids : [];
+  const uploadcareUuids = Array.from(new Set([
+    ...collectUploadcareUuids(applicationDocs),
+    ...savedUuids,
+  ]));
 
-  // Delete external files first. If this fails, Firestore records (and their
-  // UUIDs) remain available so the function can safely retry.
-  await deleteUploadcareFiles(uploadcareUuids);
+  // Preserve external file IDs before removing application records. If
+  // Uploadcare is temporarily unavailable, Auth/Firestore deletion can still
+  // finish and retrying triggers can recover the IDs from this job document.
+  if (uploadcareUuids.length) {
+    await cleanupJobRef.set({
+      uid,
+      uploadcareUuids,
+      status: "pending",
+      updatedAt: new Date().toISOString(),
+    }, {merge: true});
+  }
 
   let chatCount = 0;
   for (const applicationDoc of applicationDocs) {
@@ -138,15 +164,36 @@ async function cleanupUserData(uid) {
     ...invoiceSnap.docs.map((doc) => doc.ref),
   ]);
 
-  // Delete the profile last so a failed cleanup remains visible and retryable.
+  // Delete the profile after all linked Firestore records are gone.
   await db.collection("users").doc(uid).delete();
 
-  return {
+  const result = {
     applications: applicationDocs.length,
     invoices: invoiceSnap.size,
     chats: chatCount,
     uploadedFiles: uploadcareUuids.length,
+    fileCleanupPending: false,
   };
+
+  try {
+    await deleteUploadcareFiles(uploadcareUuids);
+    if (cleanupJobSnap.exists || uploadcareUuids.length) {
+      await cleanupJobRef.delete();
+    }
+    return result;
+  } catch (error) {
+    await cleanupJobRef.set({
+      uid,
+      uploadcareUuids,
+      status: "pending",
+      lastError: String(error && error.message || error).slice(0, 500),
+      updatedAt: new Date().toISOString(),
+    }, {merge: true});
+    throw new LinkedFileCleanupError(
+        "Linked files are pending automatic cleanup.",
+        {...result, fileCleanupPending: true},
+    );
+  }
 }
 
 exports.cleanupDeletedAuthUser = functions
@@ -178,13 +225,16 @@ exports.cleanupDeletedUserProfile = functions
     .onDelete(async (snapshot, context) => {
       const uid = context.params.uid;
 
+      // Remove linked data before Auth. This avoids leaving an Auth-deleted
+      // user visible in the admin panel when linked cleanup needs a retry.
+      const result = await cleanupUserData(uid);
+
       try {
         await auth.deleteUser(uid);
       } catch (error) {
         if (!error || error.code !== "auth/user-not-found") throw error;
       }
 
-      const result = await cleanupUserData(uid);
       functions.logger.info("Deleted data for removed Firestore profile.", {
         uid,
         ...result,
@@ -228,8 +278,30 @@ exports.deleteUserCompletely = functions
         );
       }
 
+      let result;
       try {
-        // Use single-user deletion so the Auth onDelete trigger is emitted.
+        result = await cleanupUserData(uid);
+      } catch (error) {
+        if (error && error.code === "linked-file-cleanup-pending") {
+          result = error.result;
+          functions.logger.warn("User records deleted; file cleanup pending.", {
+            adminUid: context.auth.uid,
+            uid,
+            error,
+          });
+        } else {
+          functions.logger.error("User data cleanup failed.", {uid, error});
+          throw new functions.https.HttpsError(
+              "internal",
+              "Linked user data could not be removed. The login was kept so " +
+              "you can safely retry.",
+          );
+        }
+      }
+
+      try {
+        // Delete Auth last. If linked database cleanup fails, the account is
+        // intentionally kept instead of creating an orphaned admin entry.
         await auth.deleteUser(uid);
       } catch (error) {
         if (!error || error.code !== "auth/user-not-found") {
@@ -239,27 +311,16 @@ exports.deleteUserCompletely = functions
           });
           throw new functions.https.HttpsError(
               "internal",
-              "The Authentication account could not be deleted.",
+              "Linked data was removed, but the Authentication account could " +
+              "not be deleted. Please retry.",
           );
         }
       }
 
-      try {
-        // Run cleanup now so the admin receives a definite result. The Auth
-        // trigger also runs and is intentionally idempotent for retries.
-        const result = await cleanupUserData(uid);
-        functions.logger.info("Admin permanently deleted a user.", {
-          adminUid: context.auth.uid,
-          uid,
-          ...result,
-        });
-        return {ok: true, ...result};
-      } catch (error) {
-        functions.logger.error("User data cleanup failed.", {uid, error});
-        throw new functions.https.HttpsError(
-            "internal",
-            "The login was deleted, but some linked data could not be removed. " +
-            "The automatic cleanup will retry.",
-        );
-      }
+      functions.logger.info("Admin permanently deleted a user.", {
+        adminUid: context.auth.uid,
+        uid,
+        ...result,
+      });
+      return {ok: true, ...result};
     });
