@@ -3677,6 +3677,8 @@ function loadUserInvoices() {
           card.appendChild(svcDiv);
         }
 
+        appendInvoiceAdjustments(card, inv);
+
         // Download button
         var dlBtn = document.createElement('button');
         dlBtn.style.cssText = 'background:#7c3aed;color:white;border:none;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;width:100%;';
@@ -4508,6 +4510,7 @@ function showAdminInvoices() {
           });
           card.appendChild(svcDiv);
         }
+        appendInvoiceAdjustments(card, inv);
 
         list.appendChild(card);
       });
@@ -4540,6 +4543,167 @@ function updateInvoiceSelectionCount() {
   }
 }
 
+// ===== INVOICE OPTIONS: optional GST / Discount / Round off =====
+function invR2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+function calcInvoiceTotals(items, roundMode, roundManual) {
+  var subtotal = 0, discountTotal = 0, gstTotal = 0;
+  var rows = items.map(function(it) {
+    var base = invR2(parseFloat(it.quote) || 0);
+    var dVal = parseFloat(it.discount) || 0;
+    if (dVal < 0) dVal = 0;
+    var disc = it.discountType === 'pct' ? base * dVal / 100 : dVal;
+    if (disc > base) disc = base;
+    disc = invR2(disc);
+    var taxable = invR2(base - disc);
+    var rate = parseFloat(it.gstRate) || 0;
+    if (rate < 0) rate = 0;
+    var gst = invR2(taxable * rate / 100);
+    subtotal += base; discountTotal += disc; gstTotal += gst;
+    return { base: base, disc: disc, taxable: taxable, rate: rate, gst: gst };
+  });
+  subtotal = invR2(subtotal); discountTotal = invR2(discountTotal); gstTotal = invR2(gstTotal);
+  var sum = invR2(subtotal - discountTotal + gstTotal);
+  var roundOff = 0;
+  if (roundMode === 'auto') roundOff = invR2(Math.round(sum) - sum);
+  else if (roundMode === 'manual') roundOff = invR2(parseFloat(roundManual) || 0);
+  return {
+    rows: rows, subtotal: subtotal, discountTotal: discountTotal, gstTotal: gstTotal,
+    roundOff: roundOff, total: invR2(sum + roundOff)
+  };
+}
+
+function invEl(tag, css, text) {
+  var e = document.createElement(tag);
+  if (css) e.style.cssText = css;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function openInvoiceOptionsModal(byUser, onConfirm) {
+  var inputCss = 'padding:6px 8px;border:1.5px solid #d1d5db;border-radius:7px;font-size:13px;width:70px;';
+  var overlay = invEl('div', 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;');
+  var box = invEl('div', 'background:white;border-radius:14px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:20px;');
+  overlay.appendChild(box);
+
+  box.appendChild(invEl('div', 'font-size:17px;font-weight:700;color:#7c3aed;margin-bottom:4px;', '🧾 Invoice Options'));
+  box.appendChild(invEl('div', 'font-size:12px;color:#6b7280;margin-bottom:14px;', 'GST, discount and round off are optional. Leave 0 / None to keep the invoice as it is.'));
+
+  var state = {};
+
+  function refresh(uid) {
+    var s = state[uid];
+    var items = s.rows.map(function(r) {
+      return { quote: r.app.quote, gstRate: r.gst.value, discount: r.disc.value, discountType: r.type.value };
+    });
+    var t = calcInvoiceTotals(items, s.roundSel.value, s.roundInp.value);
+    s.roundInp.style.display = s.roundSel.value === 'manual' ? 'inline-block' : 'none';
+    s.summary.textContent = '';
+    function line(label, val, bold) {
+      var l = invEl('div', 'display:flex;justify-content:space-between;font-size:13px;padding:2px 0;' + (bold ? 'font-weight:800;color:#7c3aed;font-size:15px;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;' : ''));
+      l.appendChild(invEl('span', '', label));
+      l.appendChild(invEl('span', '', val));
+      s.summary.appendChild(l);
+    }
+    line('Subtotal', 'Rs. ' + t.subtotal.toFixed(2));
+    if (t.discountTotal > 0) line('Discount', '- Rs. ' + t.discountTotal.toFixed(2));
+    if (t.gstTotal > 0) line('GST', '+ Rs. ' + t.gstTotal.toFixed(2));
+    if (t.roundOff !== 0) line('Round Off', (t.roundOff > 0 ? '+ ' : '- ') + 'Rs. ' + Math.abs(t.roundOff).toFixed(2));
+    line('Total', 'Rs. ' + t.total.toFixed(2), true);
+  }
+
+  Object.keys(byUser).forEach(function(uid) {
+    var apps = byUser[uid];
+    var sec = invEl('div', 'border:1.5px solid #e0d7ff;border-radius:12px;padding:12px;margin-bottom:12px;');
+    sec.appendChild(invEl('div', 'font-size:14px;font-weight:700;color:#111827;margin-bottom:8px;', 'Client: ' + (apps[0].name || apps[0].phone || '')));
+    state[uid] = { rows: [] };
+
+    apps.forEach(function(a) {
+      var row = invEl('div', 'border-bottom:1px solid #f1f5f9;padding:8px 0;');
+      var top = invEl('div', 'display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:6px;');
+      top.appendChild(invEl('span', 'color:#111827;', (a.service || '') + (a.subService ? ' - ' + a.subService : '') + ' (#' + (a.refId || '') + ')'));
+      top.appendChild(invEl('span', 'color:#059669;font-weight:600;white-space:nowrap;', (parseFloat(a.quote) > 0 ? 'Rs. ' + Number(a.quote).toFixed(2) : '-')));
+      row.appendChild(top);
+
+      var ctr = invEl('div', 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:#6b7280;');
+      var gst = invEl('input', inputCss); gst.type = 'number'; gst.min = '0'; gst.step = 'any'; gst.value = '0';
+      var disc = invEl('input', inputCss); disc.type = 'number'; disc.min = '0'; disc.step = 'any'; disc.value = '0';
+      var type = invEl('select', 'padding:6px 6px;border:1.5px solid #d1d5db;border-radius:7px;font-size:13px;');
+      var o1 = invEl('option', '', 'Rs.'); o1.value = 'amt';
+      var o2 = invEl('option', '', '%'); o2.value = 'pct';
+      type.appendChild(o1); type.appendChild(o2);
+      var g = invEl('label', 'display:flex;align-items:center;gap:6px;', 'GST %'); g.appendChild(gst);
+      var d = invEl('label', 'display:flex;align-items:center;gap:6px;', 'Discount'); d.appendChild(disc); d.appendChild(type);
+      ctr.appendChild(g); ctr.appendChild(d);
+      row.appendChild(ctr);
+      sec.appendChild(row);
+
+      [gst, disc].forEach(function(inp) { inp.addEventListener('input', function() { refresh(uid); }); });
+      type.addEventListener('change', function() { refresh(uid); });
+      state[uid].rows.push({ app: a, gst: gst, disc: disc, type: type });
+    });
+
+    var rw = invEl('div', 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:#6b7280;margin-top:10px;');
+    rw.appendChild(invEl('span', '', 'Round off'));
+    var rs = invEl('select', 'padding:6px 6px;border:1.5px solid #d1d5db;border-radius:7px;font-size:13px;');
+    [['none', 'None'], ['auto', 'Auto (nearest Rs. 1)'], ['manual', 'Manual']].forEach(function(p) {
+      var o = invEl('option', '', p[1]); o.value = p[0]; rs.appendChild(o);
+    });
+    var ri = invEl('input', inputCss + 'display:none;'); ri.type = 'number'; ri.step = 'any'; ri.value = '0'; ri.placeholder = '+/-';
+    rw.appendChild(rs); rw.appendChild(ri);
+    sec.appendChild(rw);
+    rs.addEventListener('change', function() { refresh(uid); });
+    ri.addEventListener('input', function() { refresh(uid); });
+
+    var summary = invEl('div', 'background:#f9fafb;border-radius:8px;padding:8px 10px;margin-top:10px;');
+    sec.appendChild(summary);
+    state[uid].roundSel = rs; state[uid].roundInp = ri; state[uid].summary = summary;
+    box.appendChild(sec);
+    refresh(uid);
+  });
+
+  var btns = invEl('div', 'display:flex;gap:10px;justify-content:flex-end;margin-top:6px;');
+  var cancel = invEl('button', 'padding:9px 18px;background:#f3f4f6;color:#374151;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;', 'Cancel');
+  var ok = invEl('button', 'padding:9px 18px;background:#7c3aed;color:white;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;', 'Generate Invoice');
+  btns.appendChild(cancel); btns.appendChild(ok);
+  box.appendChild(btns);
+
+  cancel.addEventListener('click', function() { document.body.removeChild(overlay); });
+  ok.addEventListener('click', function() {
+    var opts = {};
+    Object.keys(state).forEach(function(uid) {
+      var s = state[uid];
+      opts[uid] = {
+        roundMode: s.roundSel.value,
+        roundManual: s.roundInp.value,
+        items: s.rows.map(function(r) {
+          return { docId: r.app.docId, gstRate: parseFloat(r.gst.value) || 0, discount: parseFloat(r.disc.value) || 0, discountType: r.type.value };
+        })
+      };
+    });
+    document.body.removeChild(overlay);
+    onConfirm(opts);
+  });
+  document.body.appendChild(overlay);
+}
+
+function appendInvoiceAdjustments(card, inv) {
+  var disc = Number(inv.discountTotal) || 0, gst = Number(inv.gstTotal) || 0, ro = Number(inv.roundOff) || 0;
+  if (!disc && !gst && !ro) return;
+  var box = invEl('div', 'background:#f9fafb;border-radius:8px;padding:8px 10px;margin-bottom:12px;font-size:12px;color:#374151;');
+  function line(label, val) {
+    var l = invEl('div', 'display:flex;justify-content:space-between;padding:2px 0;');
+    l.appendChild(invEl('span', '', label));
+    l.appendChild(invEl('span', '', val));
+    box.appendChild(l);
+  }
+  line('Subtotal', 'Rs. ' + (Number(inv.subtotal) || 0).toFixed(2));
+  if (disc) line('Discount', '- Rs. ' + disc.toFixed(2));
+  if (gst) line('GST', '+ Rs. ' + gst.toFixed(2));
+  if (ro) line('Round Off', (ro > 0 ? '+ ' : '- ') + 'Rs. ' + Math.abs(ro).toFixed(2));
+  card.appendChild(box);
+}
+
 async function generateInvoiceForSelected() {
   var checked = document.querySelectorAll('input[id^="inv-chk-"]:checked');
   if (checked.length === 0) {
@@ -4549,7 +4713,6 @@ async function generateInvoiceForSelected() {
 
   // Group selected docIds
   var selectedDocIds = Array.from(checked).map(function(c) { return c.dataset.docid; });
-  showLoader('Generating invoice(s)...', selectedDocIds.length + ' application(s) selected');
 
   // Get app data for selected
   var selectedApps = _allAdminApps.filter(function(a) { return selectedDocIds.includes(a.docId); });
@@ -4562,12 +4725,27 @@ async function generateInvoiceForSelected() {
     byUser[uid].push(a);
   });
 
+  // Optional GST / discount / round off, then create
+  openInvoiceOptionsModal(byUser, function(opts) {
+    createInvoices(byUser, opts, selectedDocIds.length);
+  });
+}
+
+async function createInvoices(byUser, opts, selCount) {
+  showLoader('Generating invoice(s)...', selCount + ' application(s) selected');
+
   var invoiceCount = 0;
   for (var uid in byUser) {
     var userApps = byUser[uid];
     var firstApp = userApps[0];
+    var o = opts[uid] || { roundMode: 'none', roundManual: 0, items: [] };
     var invoiceNo = 'INV-' + Date.now().toString().slice(-6) + '-' + invoiceCount;
-    var total = userApps.reduce(function(sum, a) { return sum + (parseFloat(a.quote) || 0); }, 0);
+
+    var items = userApps.map(function(a) {
+      var op = o.items.filter(function(x) { return x.docId === a.docId; })[0] || {};
+      return { quote: a.quote, gstRate: op.gstRate || 0, discount: op.discount || 0, discountType: op.discountType || 'amt' };
+    });
+    var t = calcInvoiceTotals(items, o.roundMode, o.roundManual);
 
     var invoiceData = {
       invoiceNo: invoiceNo,
@@ -4575,17 +4753,24 @@ async function generateInvoiceForSelected() {
       clientName: firstApp.name || '',
       clientPhone: firstApp.phone || '',
       clientEmail: firstApp.email || '',
-      applications: userApps.map(function(a) {
+      applications: userApps.map(function(a, i) {
         return {
           docId: a.docId,
           refId: a.refId || '',
           service: a.service || '',
           subService: a.subService || '',
           quote: a.quote || 0,
-          date: a.date || ''
+          date: a.date || '',
+          gstRate: t.rows[i].rate,
+          gstAmount: t.rows[i].gst,
+          discount: t.rows[i].disc
         };
       }),
-      totalAmount: total,
+      subtotal: t.subtotal,
+      discountTotal: t.discountTotal,
+      gstTotal: t.gstTotal,
+      roundOff: t.roundOff,
+      totalAmount: t.total,
       status: 'unpaid',
       generatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       generatedDate: new Date().toLocaleDateString('en-IN')
@@ -4733,6 +4918,31 @@ async function downloadInvoicePDF(invoice) {
     doc.rect(margin, y - apps.length * 9 - 9, pageW - margin*2, apps.length * 9 + 9);
 
     y += 4;
+
+    // Optional adjustment lines (only when GST / discount / round off used)
+    var adjDisc = Number(invoice.discountTotal) || 0;
+    var adjGst = Number(invoice.gstTotal) || 0;
+    var adjRound = Number(invoice.roundOff) || 0;
+    if (adjDisc > 0 || adjGst > 0 || adjRound !== 0) {
+      var gstRates = [];
+      apps.forEach(function(it) {
+        var r = Number(it.gstRate) || 0;
+        if (r > 0 && gstRates.indexOf(r) === -1) gstRates.push(r);
+      });
+      var gstLabel = 'GST' + (gstRates.length === 1 ? ' @' + gstRates[0] + '%' : '');
+      var adjLines = [['Subtotal', 'Rs. ' + (Number(invoice.subtotal) || 0).toFixed(2)]];
+      if (adjDisc > 0) adjLines.push(['Discount', '- Rs. ' + adjDisc.toFixed(2)]);
+      if (adjGst > 0) adjLines.push([gstLabel, '+ Rs. ' + adjGst.toFixed(2)]);
+      if (adjRound !== 0) adjLines.push(['Round Off', (adjRound > 0 ? '+ ' : '- ') + 'Rs. ' + Math.abs(adjRound).toFixed(2)]);
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+      doc.setTextColor(55, 65, 81);
+      adjLines.forEach(function(l) {
+        doc.text(l[0], pageW/2 + 4, y + 4);
+        doc.text(l[1], pageW - margin - 4, y + 4, { align: 'right' });
+        y += 6;
+      });
+      y += 2;
+    }
 
     // Total row
     doc.setFillColor(239, 246, 255);
