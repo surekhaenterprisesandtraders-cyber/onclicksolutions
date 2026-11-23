@@ -3667,6 +3667,13 @@ function loadUserInvoices() {
             var svcName = document.createElement('div');
             svcName.style.cssText = 'color:var(--dark);';
             svcName.textContent = item.service + (item.subService ? ' — ' + item.subService : '') + ' (#' + item.refId + ')';
+            var itemNote = invoiceItemNote(item);
+            if (itemNote) {
+              var noteEl = document.createElement('div');
+              noteEl.style.cssText = 'font-size:11px;color:#6b7280;margin-top:2px;';
+              noteEl.textContent = itemNote;
+              svcName.appendChild(noteEl);
+            }
             var amt = document.createElement('div');
             amt.style.cssText = 'color:#059669;font-weight:600;white-space:nowrap;';
             amt.textContent = parseFloat(item.quote) > 0 ? 'Rs. ' + Number(item.quote).toFixed(2) : '-';
@@ -4501,6 +4508,13 @@ function showAdminInvoices() {
             var svcName = document.createElement('span');
             svcName.style.cssText = 'color:var(--dark);';
             svcName.textContent = item.service + (item.subService ? ' — ' + item.subService : '') + ' (#' + item.refId + ')';
+            var itemNote = invoiceItemNote(item);
+            if (itemNote) {
+              var noteEl = document.createElement('div');
+              noteEl.style.cssText = 'font-size:11px;color:#6b7280;margin-top:2px;';
+              noteEl.textContent = itemNote;
+              svcName.appendChild(noteEl);
+            }
             var amt = document.createElement('span');
             amt.style.cssText = 'color:#059669;font-weight:600;';
             amt.textContent = parseFloat(item.quote) > 0 ? 'Rs. ' + Number(item.quote).toFixed(2) : '-';
@@ -4685,6 +4699,14 @@ function openInvoiceOptionsModal(byUser, onConfirm) {
     onConfirm(opts);
   });
   document.body.appendChild(overlay);
+}
+
+function invoiceItemNote(item) {
+  var d = Number(item.discount) || 0, g = Number(item.gstAmount) || 0, r = Number(item.gstRate) || 0;
+  var parts = [];
+  if (d > 0) parts.push('Discount - Rs. ' + d.toFixed(2));
+  if (g > 0) parts.push('GST @' + r + '% + Rs. ' + g.toFixed(2));
+  return parts.join(' | ');
 }
 
 function appendInvoiceAdjustments(card, inv) {
@@ -4896,11 +4918,17 @@ async function downloadInvoicePDF(invoice) {
     doc.text('Amount (Rs.)', pageW - margin - 3, y + 6, { align: 'right' });
     y += 9;
 
-    // Table rows
+    // Table rows (taller row only for services that have GST / discount)
     var apps = invoice.applications || [];
+    var tableTop = y - 9;
     apps.forEach(function(item, i) {
+      var itDisc = Number(item.discount) || 0;
+      var itGstRate = Number(item.gstRate) || 0;
+      var itGst = Number(item.gstAmount) || 0;
+      var hasNote = itDisc > 0 || itGst > 0;
+      var rowH = hasNote ? 13 : 9;
       doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 251 : 255);
-      doc.rect(margin, y, pageW - margin*2, 9, 'F');
+      doc.rect(margin, y, pageW - margin*2, rowH, 'F');
       doc.setTextColor(17, 24, 39);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
       doc.text(String(i + 1), margin + 3, y + 6);
@@ -4910,12 +4938,19 @@ async function downloadInvoicePDF(invoice) {
       doc.text(item.refId || '', margin + 100, y + 6);
       var amt = parseFloat(item.quote) || 0;
       doc.text(amt > 0 ? 'Rs. ' + amt.toFixed(2) : '-', pageW - margin - 3, y + 6, { align: 'right' });
-      y += 9;
+      if (hasNote) {
+        var notes = [];
+        if (itDisc > 0) notes.push('Discount: - Rs. ' + itDisc.toFixed(2));
+        if (itGst > 0) notes.push('GST @' + itGstRate + '%: + Rs. ' + itGst.toFixed(2));
+        doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+        doc.text(notes.join('   |   '), margin + 12, y + 10.5);
+      }
+      y += rowH;
     });
 
     // Border around table
     doc.setDrawColor(229, 231, 235);
-    doc.rect(margin, y - apps.length * 9 - 9, pageW - margin*2, apps.length * 9 + 9);
+    doc.rect(margin, tableTop, pageW - margin*2, y - tableTop);
 
     y += 4;
 
