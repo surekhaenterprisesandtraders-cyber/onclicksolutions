@@ -4629,8 +4629,16 @@ function openInvoiceOptionsModal(byUser, onConfirm) {
   Object.keys(byUser).forEach(function(uid) {
     var apps = byUser[uid];
     var sec = invEl('div', 'border:1.5px solid #e0d7ff;border-radius:12px;padding:12px;margin-bottom:12px;');
-    sec.appendChild(invEl('div', 'font-size:14px;font-weight:700;color:#111827;margin-bottom:8px;', 'Client: ' + (apps[0].name || apps[0].phone || '')));
+    sec.appendChild(invEl('div', 'font-size:14px;font-weight:700;color:#111827;margin-bottom:8px;', 'Bill To (editable for this invoice)'));
     state[uid] = { rows: [] };
+    var cw = invEl('div', 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;');
+    var fieldCss = 'padding:7px 9px;border:1.5px solid #d1d5db;border-radius:7px;font-size:13px;flex:1 1 180px;min-width:0;';
+    var nameInp = invEl('input', fieldCss); nameInp.type = 'text'; nameInp.placeholder = 'Client name'; nameInp.value = apps[0].name || '';
+    var phoneInp = invEl('input', fieldCss); phoneInp.type = 'text'; phoneInp.placeholder = 'Phone'; phoneInp.value = apps[0].phone || '';
+    var emailInp = invEl('input', fieldCss); emailInp.type = 'text'; emailInp.placeholder = 'Email (optional)'; emailInp.value = apps[0].email || '';
+    cw.appendChild(nameInp); cw.appendChild(phoneInp); cw.appendChild(emailInp);
+    sec.appendChild(cw);
+    state[uid].nameInp = nameInp; state[uid].phoneInp = phoneInp; state[uid].emailInp = emailInp;
 
     apps.forEach(function(a) {
       var row = invEl('div', 'border-bottom:1px solid #f1f5f9;padding:8px 0;');
@@ -4690,6 +4698,7 @@ function openInvoiceOptionsModal(byUser, onConfirm) {
       opts[uid] = {
         roundMode: s.roundSel.value,
         roundManual: s.roundInp.value,
+        client: { name: s.nameInp.value.trim(), phone: s.phoneInp.value.trim(), email: s.emailInp.value.trim() },
         items: s.rows.map(function(r) {
           return { docId: r.app.docId, gstRate: parseFloat(r.gst.value) || 0, discount: parseFloat(r.disc.value) || 0, discountType: r.type.value };
         })
@@ -4772,9 +4781,9 @@ async function createInvoices(byUser, opts, selCount) {
     var invoiceData = {
       invoiceNo: invoiceNo,
       userId: firstApp.userId || '',
-      clientName: firstApp.name || '',
-      clientPhone: firstApp.phone || '',
-      clientEmail: firstApp.email || '',
+      clientName: (o.client ? o.client.name : firstApp.name) || '',
+      clientPhone: (o.client ? o.client.phone : firstApp.phone) || '',
+      clientEmail: (o.client ? o.client.email : firstApp.email) || '',
       applications: userApps.map(function(a, i) {
         return {
           docId: a.docId,
